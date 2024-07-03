@@ -62,6 +62,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let consumer = create_kafka_base_consumer(&config.kafka.bootstrap_servers, "test-group");
     let messages = read_messages_from_offset_range(&consumer, &config.kafka.topic, 0, 228, 284).await;
-    println!("{:?}", messages);
+
+    info!("Messages: {:?}", messages);
+
     Ok(())
 }
