@@ -1,0 +1,10 @@
+{
+  "kafka": {
+    "bootstrap_servers": "localhost:9094",
+    "topic": "jdd_raw"
+  },
+  "csv": {
+    "table_name": "jdd",
+    "file_path": "files/JDD_normalisation.csv"
+  }
+}
