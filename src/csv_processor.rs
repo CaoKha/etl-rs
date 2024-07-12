@@ -15,14 +15,14 @@ pub fn csv_to_json(file_path: &str) -> Result<Vec<Value>, Box<dyn Error>> {
 
     for result in reader.records() {
         let record = result?;
-        let json_obj = create_json_object(&headers, &record)?;
+        let json_obj = csv_row_to_json_object(&headers, &record)?;
         json_objects.push(Value::Object(json_obj));
     }
 
     Ok(json_objects)
 }
 
-fn create_json_object(
+fn csv_row_to_json_object(
     headers: &csv::StringRecord,
     record: &csv::StringRecord,
 ) -> Result<Map<String, Value>, Box<dyn Error>> {
