@@ -2,3 +2,4 @@
 /pgdata
 /mongo-data
 /kafka-data
+.env

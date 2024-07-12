@@ -31,6 +31,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let pool = PgPool::connect(&postgres_url).await?;
 
+    create_table(&pool).await?;
+
     while let Some(result) = csv_reader.deserialize::<JddSchema>().next() {
         let record = result?;
 
@@ -71,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn create_table(pool: &PgPool) -> Result<(), sqlx::Error> {
     // SQL statement to create the table
     let create_table_query = r#"
-        CREATE TABLE IF NOT EXISTS dedup_raw (
+        CREATE TABLE IF NOT EXISTS jdd_raw (
             raison_sociale TEXT,
             siret TEXT,
             siren TEXT,
