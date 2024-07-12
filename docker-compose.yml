@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: $MONGO_ROOT_USR
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PWD
     volumes:
-      - mongo-data:/data/db
+      - ./mongo-data:/data/db
     networks:
       - localnet
     expose:
@@ -49,7 +49,7 @@ services:
       #Identify all other controllers in the cluster
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093
     volumes:
-      - kafka-data:/bitnami
+      - ./kafka-data:/bitnami
     ports:
       - "9092:9092"
       - "9094:9094"
