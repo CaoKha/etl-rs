@@ -1,3 +1,0 @@
-[env]
-DATABASE_URL = "postgresql://root:example@localhost:5432/artemis"
-RUST_LOG = "info"
