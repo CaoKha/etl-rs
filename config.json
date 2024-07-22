@@ -1,14 +1,15 @@
 {
   "kafka": {
     "bootstrap_servers": "localhost:19092",
-    "topic": "jdd"
+    "topic": "jdd2"
   },
   "csv": {
     "table_name": "jdd",
-    "file_path": "files/JDD_normalisation.csv"
+    "file_path": "files/JDD_deduplication.csv",
+    "number_of_rows": 25
   },
   "mongo": {
     "database": "raw",
-    "collection": "jdd"
+    "collection": "jdd2"
   }
 }

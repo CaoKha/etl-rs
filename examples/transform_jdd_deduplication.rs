@@ -10,7 +10,7 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 use std::env;
 
-pub fn struct_to_dataframe<T>(input: &[T]) -> DataFrame
+fn struct_to_dataframe<T>(input: &[T]) -> DataFrame
 where
     T: Serialize,
 {

@@ -21,6 +21,7 @@ pub struct KafkaConfig {
 pub struct CsvConfig {
     pub file_path: String,
     pub table_name: String,
+    pub number_of_rows: i64,
 }
 
 #[derive(Debug, Deserialize)]

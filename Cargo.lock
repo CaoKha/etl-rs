@@ -138,6 +138,7 @@ dependencies = [
  "notify",
  "polars",
  "rdkafka",
+ "regex",
  "sea-query",
  "sea-query-binder",
  "serde",
