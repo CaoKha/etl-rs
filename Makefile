@@ -1,11 +1,32 @@
-build:
+docker-build:
 	docker compose build
 
-build_and_run:
+docker-build-and-run:
 	docker compose up --build
 
-run:
+docker-run:
 	docker compose up
 
-run_detach:
+docker-run_detach:
 	docker compose up -d
+
+docker-down:
+	docker compose down --remove-orphans
+
+docker-down-volumes:
+	docker compose down --volumes --remove-orphans
+
+docker-clean:
+	docker compose down --rmi="all" --volumes
+
+example-csv-jdd-to-postgres:
+	cargo run --example csv_jdd_to_postgres
+
+example-transform-jdd-deduplication:
+	cargo run --example transform_jdd_deduplication
+
+example-csv-to-kafka:
+	cargo run --example csv_to_kafka
+
+example-kafka-to-mongo:
+	cargo run --example kafka_to_mongo

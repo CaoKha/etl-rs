@@ -1,13 +1,19 @@
 use std::env;
 
-use artemis_rs::config::{Config, KafkaMessage};
+use artemis_rs::config::{Config, KafkaMessage, MongoConfig};
 use artemis_rs::kafka::create_kafka_base_consumer;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use mongodb::{bson, Client};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::topic_partition_list::Offset;
 use rdkafka::{Message, TopicPartitionList};
 use serde_json::Value;
+
+enum WriteMode {
+    Overwrite,
+    #[allow(dead_code)]
+    Append,
+}
 
 async fn read_messages_from_offset_range(
     consumer: &BaseConsumer,
@@ -24,6 +30,8 @@ async fn read_messages_from_offset_range(
         .assign(&topic_partition)
         .expect("Failed to get partition offset");
 
+    info!("Reading messages from Kafka...");
+
     for message in consumer.iter() {
         let msg = message.expect("Failed to get message");
         let payload = match msg.payload_view::<str>() {
@@ -33,6 +41,8 @@ async fn read_messages_from_offset_range(
                 continue;
             }
         };
+
+        debug!("Reading message at offset {}.", msg.offset());
 
         let kafka_message = KafkaMessage {
             key: msg
@@ -51,17 +61,18 @@ async fn read_messages_from_offset_range(
             break;
         }
     }
+
     messages
 }
 
 async fn save_kafka_messages_to_mongo(
     client: &mongodb::Client,
-    db_name: &str,
-    collection_name: &str,
+    mongo_cfg: &MongoConfig,
     messages: &[KafkaMessage],
+    mode: WriteMode,
 ) -> mongodb::error::Result<()> {
-    let db = client.database(db_name);
-    let coll = db.collection(collection_name);
+    let db = client.database(&mongo_cfg.database);
+    let coll = db.collection(&mongo_cfg.collection);
     let mut docs: Vec<bson::Document> = Vec::new();
 
     for message in messages {
@@ -71,7 +82,15 @@ async fn save_kafka_messages_to_mongo(
         docs.push(doc);
     }
 
-    coll.insert_many(docs).await?;
+    match mode {
+        WriteMode::Overwrite => {
+            coll.drop().await?;
+            coll.insert_many(docs).await?;
+        }
+        WriteMode::Append => {
+            coll.insert_many(docs).await?;
+        }
+    }
     Ok(())
 }
 
@@ -90,10 +109,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Configuration loaded successfully");
 
-    let consumer = create_kafka_base_consumer(&config.kafka.bootstrap_servers, "test-group");
-    let messages =
-        read_messages_from_offset_range(&consumer, &config.kafka.topic, 0, 296, 341).await;
-    info!("Messages: {:#?}", messages);
+    let consumer = create_kafka_base_consumer(&config.kafka.bootstrap_servers, "group-jdd");
+    let messages = read_messages_from_offset_range(&consumer, &config.kafka.topic, 0, 0, 56).await;
     let mongo_uri = format!(
         "mongodb://{}:{}@{}:{}/",
         env::var("MONGO_ROOT_USR")?,
@@ -101,8 +118,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::var("MONGO_HOST")?,
         env::var("MONGO_PORT")?
     );
+
     let mongo_client = Client::with_uri_str(mongo_uri).await?;
-    save_kafka_messages_to_mongo(&mongo_client, "client_raw", "recette_brut", &messages).await?;
+
+    info!("Saving messages to MongoDB...");
+
+    save_kafka_messages_to_mongo(
+        &mongo_client,
+        &config.mongo,
+        &messages,
+        WriteMode::Overwrite,
+    )
+    .await?;
+
+    info!(
+        "Messages saved successfully to MongoDB at \"{}.{}\"",
+        &config.mongo.database, &config.mongo.collection
+    );
 
     Ok(())
 }

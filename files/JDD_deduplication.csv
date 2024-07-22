@@ -1,0 +1,26 @@
+Id_source;PCE;SIRET;SIRET successeur;Raison_sociale;Telephone;Email;Nom;Prenom
+1;;;;;606060606.0;;SALLANDIER;Benoît
+2;12345678910124.0;;;;;benoit.sallandier@grdf.fr;SALLANDIER;Benoît
+3;12345678910124.0;;;;;;SALLANDIER;Benoît
+4;;;;;607070707.0;romain.carre@grdf.fr;CARRE;Romain
+5;;;;;678967545.0;romain.carre@grdf.fr;CARRE;Romain
+6;;;;;678967545.0;;Romain;CARRE
+7;;;;;;romain.carre@grdf.fr;ROMAIN CARRE;
+8;12345678910124.0;;;;;benoit.sallandier@grdf.fr;SALLANDIER;
+9;17650187390356.0;;;;;dam.mich@gmail.fr;MICHEL;Damien
+10;17650187390356.0;;;;;jacquelinelaboss@wanadoo.fr;MAQUES;Jacqueline
+11;19068361804528.0;;;;681290165.0;c.testud@gmail.com;TESTUD;Céline
+12;19068361804528.0;;;;734013972.0;c.testud@gmail.com;TESTUD;Coline
+13;91100140000000.0;73282932009878.0;;CARRE Plomberie;649031399.0;contact@a.com;;
+14;91100140000000.0;;;CARRE Plomberie;649031399.0;contact@a.com;;
+15;91234567891098.0;91234123451234.0;;STRAZEL Cupcakes;;;;
+16;;91234123451234.0;;STRAZEL Cupcakes;;;;
+17;;12345948776123.0;;SALLANDIER Toilet'Iench;654389120.0;toutoutoilettage@doggo.fr;;
+18;;98765438210987.0;12345948776123.0;SALLANDIER Toilet'Iench;781234571.0;;;
+19;22001700000001.0;;;Home Office;234568799.0;welcome@hentre.co;;
+20;22001700000001.0;;;Blablacar;234568588.0;welcome@hentre.co;;
+21;22001700000001.0;;;Décathlon;;welcome@hentre.co;;
+22;11001400000009.0;;;SARL SOCIETE DE CONSTRUCTION DU BATIMENT;33492351846.0;rennes-doneliere.homeservices@engie.com;;
+23;11001400000009.0;;;SOCIETE ANONYME D'HABITATIONS A LOYER MODERE HABELLIS;33630000961.0;saintbrieuc-plerin.homeservices@engie.com;;
+24;11001400000009.0;;;EIFFAGE CONSTRUCTION BOURGOGNE FRANCHE COMTE;33383574847.0;saintmalo.homeservices@engie.com;;
+25;11001400000009.0;;9274901289400.0;EIFFAGE CONSTRUCTION BOURGOGNE FRANCHE COMTE;33381483434.0;tours-homeservices@engie.com;;

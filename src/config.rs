@@ -2,54 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct JddSchema {
-    #[serde(rename = "RAISON_SOCIALE")]
-    pub raison_sociale: Option<String>,
-
-    #[serde(rename = "SIRET")]
-    pub siret: Option<String>,
-
-    #[serde(rename = "SIREN")]
-    pub siren: Option<String>,
-
-    #[serde(rename = "APE")]
-    pub ape: Option<String>,
-
-    #[serde(rename = "CODE_NAF")]
-    pub code_naf: Option<String>,
-
-    #[serde(rename = "LIBELE_NAF")]
-    pub libele_naf: Option<String>,
-
-    #[serde(rename = "CIVILITE")]
-    pub civilite: Option<String>,
-
-    #[serde(rename = "NOM")]
-    pub nom: Option<String>,
-
-    #[serde(rename = "PRENOM")]
-    pub prenom: Option<String>,
-
-    #[serde(rename = "TELEPHONE")]
-    pub telephone: Option<String>,
-
-    #[serde(rename = "email")]
-    pub email: Option<String>,
-
-    #[serde(rename = "address")]
-    pub address: Option<String>,
-
-    #[serde(rename = "CODE POSTALE")]
-    pub code_postale: Option<String>,
-
-    #[serde(rename = "REGION")]
-    pub region: Option<String>,
-
-    #[serde(rename = "PAYS")]
-    pub pays: Option<String>,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KafkaMessage {
     pub key: String,
@@ -72,9 +24,16 @@ pub struct CsvConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct MongoConfig {
+    pub database: String,
+    pub collection: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub kafka: KafkaConfig,
     pub csv: CsvConfig,
+    pub mongo: MongoConfig,
 }
 
 impl Config {
