@@ -1,6 +1,8 @@
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
+use artemis_rs::transforms::transform_col_nom;
 use dotenv::dotenv;
 use log::info;
+use polars::lazy::dsl as d;
 use polars::prelude::*;
 use sea_query::{ColumnRef, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -63,6 +65,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rows: Vec<JddSchema> = sqlx::query_as_with(&sql, values).fetch_all(&pool).await?;
     let df = struct_to_dataframe(&rows);
 
-    println!("{:#?}", df);
+    let lf = df
+        .clone()
+        .lazy()
+        .with_column(
+            d::col(Jdd::Nom.as_str())
+                .map(
+                    |series: Series| transform_col_nom(&series),
+                    d::GetOutput::from_type(DataType::String),
+                )
+                .alias(Jdd::Nom.as_str()),
+        )
+        .select(&[d::col(Jdd::Nom.as_str())]);
+    println!("{:#?}", lf.collect());
     Ok(())
 }

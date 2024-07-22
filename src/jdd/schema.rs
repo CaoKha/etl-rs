@@ -21,6 +21,29 @@ pub enum Jdd {
     Pays,
 }
 
+impl Jdd {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Jdd::Table => "JDD",
+            Jdd::Id => "ID",
+            Jdd::RaisonSociale => "RAISON_SOCIALE",
+            Jdd::Siret => "SIRET",
+            Jdd::Siren => "SIREN",
+            Jdd::Ape => "APE",
+            Jdd::CodeNaf => "CODE_NAF",
+            Jdd::LibeleNaf => "LIBELE_NAF",
+            Jdd::Civilite => "CIVILITE",
+            Jdd::Nom => "NOM",
+            Jdd::Prenom => "PRENOM",
+            Jdd::Telephone => "TELEPHONE",
+            Jdd::Email => "email",
+            Jdd::Address => "address",
+            Jdd::CodePostale => "CODE POSTALE",
+            Jdd::Region => "REGION",
+            Jdd::Pays => "PAYS",
+        }
+    }
+}
 #[derive(Debug, serde::Deserialize, serde::Serialize, sqlx::FromRow)]
 pub struct JddSchema {
     #[serde(rename = "RAISON_SOCIALE")]

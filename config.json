@@ -5,8 +5,8 @@
   },
   "csv": {
     "table_name": "jdd",
-    "file_path": "files/JDD_deduplication.csv",
-    "number_of_rows": 25
+    "file_path": "files/JDD_normalisation.csv",
+    "number_of_rows": 56
   },
   "mongo": {
     "database": "raw",
