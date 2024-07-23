@@ -133,6 +133,7 @@ dependencies = [
  "csv",
  "dotenv",
  "env_logger",
+ "lazy_static",
  "log",
  "mongodb",
  "notify",

@@ -1,6 +1,6 @@
 use artemis_rs::config::FILES_PATH;
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
-use artemis_rs::transforms::{transform_col_nom, transform_col_prenom};
+use artemis_rs::transforms::{transform_col_civility, transform_col_nom, transform_col_prenom};
 use dotenv::dotenv;
 use log::info;
 use polars::lazy::dsl::{col, GetOutput};
@@ -73,6 +73,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
         col(Jdd::Prenom.as_str()).map(
             |series: Series| transform_col_prenom(&series),
+            GetOutput::from_type(DataType::String),
+        ),
+        col(Jdd::Civilite.as_str()).map(
+            |series: Series| transform_col_civility(&series),
             GetOutput::from_type(DataType::String),
         ),
     ]);

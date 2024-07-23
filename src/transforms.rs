@@ -6,6 +6,8 @@ use polars::{
 use regex::Regex;
 use std::borrow::Cow;
 
+use crate::config::{CIVILITY_MAP, SPECIAL_CIVILITIES};
+
 // Start of string normalization functions
 fn strip_accent(text: &str) -> String {
     text.chars()
@@ -196,6 +198,48 @@ fn transform_prenom(opt_text: Option<&str>) -> Option<String> {
         }
     })
 }
+
+// Define a function to transform a single text value
+fn transform_civility(opt_text: Option<&str>) -> Option<String> {
+    opt_text.and_then(|text| {
+        let text = strip_accent(text.trim()).to_uppercase().to_string();
+
+        if SPECIAL_CIVILITIES.contains(&text.as_str()) {
+            return None;
+        }
+
+        let re = Regex::new(r"[.,/&\\]").unwrap();
+        let text = re.replace_all(&text, " ");
+
+        let parts: Vec<&str> = text.split_whitespace().collect();
+        let mut full_titles = vec![];
+
+        for part in parts {
+            if let Some(title_ref) = CIVILITY_MAP.get(part) {
+                let title = title_ref.to_string();
+                if !full_titles.contains(&title) {
+                    full_titles.push(title.clone());
+                }
+            }
+        }
+
+        let mut result = vec![];
+
+        if full_titles.contains(&"MONSIEUR".to_string()) {
+            result.push("MONSIEUR".to_string());
+        }
+
+        if full_titles.contains(&"MADAME".to_string()) {
+            result.push("MADAME".to_string());
+        }
+
+        if result.is_empty() {
+            None
+        } else {
+            Some(result.join(" "))
+        }
+    })
+}
 // End of transformation functions
 
 // Start of column transformation functions
@@ -214,6 +258,10 @@ pub fn transform_col_nom(series: &Series) -> PolarsResult<Option<Series>> {
 
 pub fn transform_col_prenom(series: &Series) -> PolarsResult<Option<Series>> {
     transform_string_series(series, transform_prenom)
+}
+
+pub fn transform_col_civility(series: &Series) -> PolarsResult<Option<Series>> {
+    transform_string_series(series, transform_civility)
 }
 // End of column transformation functions
 
