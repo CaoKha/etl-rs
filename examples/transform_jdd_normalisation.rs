@@ -1,11 +1,11 @@
+use artemis_rs::config::FILES_PATH;
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
-use artemis_rs::transforms::transform_col_nom;
+use artemis_rs::transforms::{transform_col_nom, transform_col_prenom};
 use dotenv::dotenv;
 use log::info;
-use polars::lazy::dsl as d;
+use polars::lazy::dsl::{col, GetOutput};
 use polars::prelude::*;
 use sea_query::{ColumnRef, PostgresQueryBuilder, Query};
-use sea_query_binder::SqlxBinder;
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::PgPool;
@@ -58,25 +58,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = PgPool::connect(&postgres_url)
         .await
         .expect("Postgres connection failed");
-    let (sql, values) = Query::select()
+    let sql = Query::select()
         .column(ColumnRef::Asterisk)
         .from(Jdd::Table)
-        .build_sqlx(PostgresQueryBuilder);
-    let rows: Vec<JddSchema> = sqlx::query_as_with(&sql, values).fetch_all(&pool).await?;
+        .to_owned()
+        .to_string(PostgresQueryBuilder);
+    let rows: Vec<JddSchema> = sqlx::query_as(&sql).fetch_all(&pool).await?;
     let df = struct_to_dataframe(&rows);
 
-    let lf = df
-        .clone()
-        .lazy()
-        .with_column(
-            d::col(Jdd::Nom.as_str())
-                .map(
-                    |series: Series| transform_col_nom(&series),
-                    d::GetOutput::from_type(DataType::String),
-                )
-                .alias(Jdd::Nom.as_str()),
-        )
-        .select(&[d::col(Jdd::Nom.as_str())]);
-    println!("{:#?}", lf.collect());
+    let lf = df.lazy().with_columns(vec![
+        col(Jdd::Nom.as_str()).map(
+            |series: Series| transform_col_nom(&series),
+            GetOutput::from_type(DataType::String),
+        ),
+        col(Jdd::Prenom.as_str()).map(
+            |series: Series| transform_col_prenom(&series),
+            GetOutput::from_type(DataType::String),
+        ),
+    ]);
+
+    let mut df = lf.collect()?;
+
+    let mut csv_file =
+        std::fs::File::create(String::from(FILES_PATH) + "JDD_normalisation_transformed.csv")?;
+    CsvWriter::new(&mut csv_file).finish(&mut df)?;
+
     Ok(())
 }

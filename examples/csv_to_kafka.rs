@@ -1,4 +1,4 @@
-use artemis_rs::config::Config;
+use artemis_rs::config::{Config, IO_CONFIG_PATH};
 use artemis_rs::csv_processor::csv_to_json;
 use artemis_rs::kafka::push_json_to_kafka;
 use log::{error, info};
@@ -7,7 +7,7 @@ use log::{error, info};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
-    let config = match Config::load("config.json") {
+    let config = match Config::load(IO_CONFIG_PATH) {
         Ok(cfg) => cfg,
         Err(e) => {
             error!("Failed to load configuration: {}", e);

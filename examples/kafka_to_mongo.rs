@@ -1,6 +1,6 @@
 use std::env;
 
-use artemis_rs::config::{Config, KafkaMessage, MongoConfig};
+use artemis_rs::config::{Config, KafkaMessage, MongoConfig, IO_CONFIG_PATH};
 use artemis_rs::kafka::create_kafka_base_consumer;
 use log::{debug, error, info, warn};
 use mongodb::{bson, Client};
@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    let config = match Config::load("config.json") {
+    let config = match Config::load(IO_CONFIG_PATH) {
         Ok(cfg) => cfg,
         Err(e) => {
             error!("Failed to load configuration: {}", e);

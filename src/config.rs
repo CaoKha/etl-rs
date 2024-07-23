@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
 
+pub const IO_CONFIG_PATH: &str = "configs/io-config.json";
+pub const FILES_PATH: &str = "files/";
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KafkaMessage {
     pub key: String,
@@ -36,6 +39,7 @@ pub struct Config {
     pub csv: CsvConfig,
     pub mongo: MongoConfig,
 }
+
 
 impl Config {
     pub fn load(file_path: &str) -> Result<Self, Box<dyn Error>> {

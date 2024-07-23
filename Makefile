@@ -1,14 +1,14 @@
 docker-build:
 	docker compose build
 
-docker-build-and-run:
+docker-run-after-build:
 	docker compose up --build
 
 docker-run:
-	docker compose up
+	make docker-down && docker compose up
 
 docker-run_detach:
-	docker compose up -d
+	make docker-down && docker compose up -d
 
 docker-down:
 	docker compose down --remove-orphans

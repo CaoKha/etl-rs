@@ -1,5 +1,5 @@
 use artemis_rs::{
-    config::Config,
+    config::{Config, IO_CONFIG_PATH},
     jdd::schema::{Jdd, JddSchema},
 };
 use log::{debug, error, info};
@@ -10,7 +10,7 @@ use sqlx::PgPool;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
-    let config = match Config::load("config.json") {
+    let config = match Config::load(IO_CONFIG_PATH) {
         Ok(cfg) => cfg,
         Err(e) => {
             error!("Failed to load configuration: {}", e);
