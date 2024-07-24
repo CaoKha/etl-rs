@@ -19,14 +19,14 @@ pub const SPECIAL_CIVILITIES: [&str; 9] = [
 ];
 
 lazy_static! {
-    pub static ref CIVILITY_MAP: HashMap<&'static str, &'static str> = {
+    pub static ref CIVILITE_MAP: HashMap<&'static str, &'static str> = {
         let mut map = HashMap::new();
         map.insert("MONSIEUR", "MONSIEUR");
         map.insert("M", "MONSIEUR");
         map.insert("M.", "MONSIEUR");
         map.insert("MR", "MONSIEUR");
         map.insert("MM", "MONSIEUR");
-        map.insert("M(espace)", "MONSIEUR");
+        map.insert("M(ESPACE)", "MONSIEUR");
         map.insert("MADAME", "MADAME");
         map.insert("MME", "MADAME");
         map.insert("MRS", "MADAME");

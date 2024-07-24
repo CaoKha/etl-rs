@@ -1,0 +1,209 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'artemis_rs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "artemis_rs",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'csv_to_kafka'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=csv_to_kafka",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "csv_to_kafka",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'csv_to_kafka'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=csv_to_kafka",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "csv_to_kafka",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'simple_kafka_consumer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=simple_kafka_consumer",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "simple_kafka_consumer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'simple_kafka_consumer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=simple_kafka_consumer",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "simple_kafka_consumer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'kafka_to_mongo'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=kafka_to_mongo",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "kafka_to_mongo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'kafka_to_mongo'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=kafka_to_mongo",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "kafka_to_mongo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'csv_jdd_to_postgres'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=csv_jdd_to_postgres",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "csv_jdd_to_postgres",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'csv_jdd_to_postgres'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=csv_jdd_to_postgres",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "csv_jdd_to_postgres",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'transform_jdd_normalisation'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=transform_jdd_normalisation",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "transform_jdd_normalisation",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'transform_jdd_normalisation'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=transform_jdd_normalisation",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "transform_jdd_normalisation",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

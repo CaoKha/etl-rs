@@ -1,9 +1,8 @@
 use artemis_rs::config::FILES_PATH;
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
-use artemis_rs::transforms::{transform_col_civility, transform_col_nom, transform_col_prenom};
+use artemis_rs::jdd::transforms::{col_code_naf_with_polars_expr, col_with_udf_expr, Transform};
 use dotenv::dotenv;
 use log::info;
-use polars::lazy::dsl::{col, GetOutput};
 use polars::prelude::*;
 use sea_query::{ColumnRef, PostgresQueryBuilder, Query};
 use serde::Serialize;
@@ -67,18 +66,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let df = struct_to_dataframe(&rows);
 
     let lf = df.lazy().with_columns(vec![
-        col(Jdd::Nom.as_str()).map(
-            |series: Series| transform_col_nom(&series),
-            GetOutput::from_type(DataType::String),
-        ),
-        col(Jdd::Prenom.as_str()).map(
-            |series: Series| transform_col_prenom(&series),
-            GetOutput::from_type(DataType::String),
-        ),
-        col(Jdd::Civilite.as_str()).map(
-            |series: Series| transform_col_civility(&series),
-            GetOutput::from_type(DataType::String),
-        ),
+        col_with_udf_expr(Jdd::Nom, Transform::Nom),
+        col_with_udf_expr(Jdd::Prenom, Transform::Prenom),
+        col_with_udf_expr(Jdd::Civilite, Transform::Civilite),
+        col_with_udf_expr(Jdd::Email, Transform::Email),
+        col_with_udf_expr(Jdd::RaisonSociale, Transform::RaisonSociale),
+        col_with_udf_expr(Jdd::Telephone, Transform::Telephone),
+        col_code_naf_with_polars_expr(),
     ]);
 
     let mut df = lf.collect()?;
