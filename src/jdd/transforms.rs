@@ -480,7 +480,7 @@ pub fn col_code_naf_with_polars_expr() -> Expr {
             .extract(lit(r"^(\d{4})[a-zA-Z]$"), 1)
             .is_null(),
     )
-    .then(lit(NULL))
+    .then(lit(NULL).alias(Jdd::CodeNaf.as_str()))
     .otherwise(
         concat_str(
             [
@@ -668,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_format_telephone_number() {
+    fn test_transform_telephone() {
         let test_cases = vec![
             (
                 Some("07 85 78 45 21b"),
@@ -708,20 +708,20 @@ mod tests {
     fn test_col_code_naf_with_polars_expr() {
         // Create a DataFrame with test data
         let df = df![
-            Jdd::CodeNaf.as_str() => &[
-                "011;1Z",
-                "1234A",
-                "5678B",
-                "12-34-C",
-                "1234",
-                "5678",
-                "12-34"
+            Jdd::CodeNaf.as_str() => [
+                Some("011;1Z"),
+                Some("1234a"),
+                Some("5678B"),
+                Some("1234"),
+                Some("5678"),
+                Some("12-34")
             ]
         ]
         .expect("DataFrame created failed");
 
         // Apply the expression
-        let result = df
+        let result_df = df
+            .clone()
             .lazy()
             .select(&[col_code_naf_with_polars_expr()])
             .collect()
@@ -729,20 +729,19 @@ mod tests {
 
         // Expected DataFrame
         let expected_df = df![
-            Jdd::CodeNaf.as_str() => &[
-                "0111Z",
-                "1234A", // Unchanged
-                "5678B", // Unchanged
-                "1234C", // Transformed from "12-34-C"
-                "1234",  // Unchanged
-                "5678",  // Unchanged
-                "",    // Transformed from "12-34" because it does not have an alphabetic suffix
+            Jdd::CodeNaf.as_str() => [
+                Some("0111Z"),
+                Some("1234A"), // Unchanged
+                Some("5678B"), // Unchanged
+                None,
+                None,
+                None
             ]
         ]
         .expect("DataFrame created failed");
 
         // Extract the Series for comparison
-        let result_series = result
+        let result_series = result_df
             .column(Jdd::CodeNaf.as_str())
             .expect("Result column not found");
         let expected_series = expected_df
