@@ -1,42 +1,9 @@
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
 pub const IO_CONFIG_PATH: &str = "configs/io-config.json";
 pub const FILES_PATH: &str = "files/";
-pub const SPECIAL_CIVILITIES: [&str; 9] = [
-    "DOCTEUR",
-    "GÉNÉRAL",
-    "COMPTE",
-    "INGÉNIEUR GÉNÉRAL",
-    "PRÉFET",
-    "PROFESSEUR",
-    "MONSEIGNEUR",
-    "SŒUR",
-    "COMMISSAIRE",
-];
-
-lazy_static! {
-    pub static ref CIVILITE_MAP: HashMap<&'static str, &'static str> = {
-        let mut map = HashMap::new();
-        map.insert("MONSIEUR", "MONSIEUR");
-        map.insert("M", "MONSIEUR");
-        map.insert("M.", "MONSIEUR");
-        map.insert("MR", "MONSIEUR");
-        map.insert("MM", "MONSIEUR");
-        map.insert("M(ESPACE)", "MONSIEUR");
-        map.insert("MADAME", "MADAME");
-        map.insert("MME", "MADAME");
-        map.insert("MRS", "MADAME");
-        map.insert("MS", "MADAME");
-        map.insert("MLLE", "MADAME");
-        map.insert("MAD", "MADAME");
-        map.insert("MADEMOISELLE", "MADAME");
-        map
-    };
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KafkaMessage {

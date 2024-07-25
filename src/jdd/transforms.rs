@@ -9,446 +9,25 @@ use polars::{
 use regex::Regex;
 use std::{borrow::Cow, collections::HashSet};
 
-use crate::{
-    config::{CIVILITE_MAP, SPECIAL_CIVILITIES},
-    jdd::schema::Jdd,
+use self::{civilite::transform_col_civilite, email::transform_col_email, nom::transform_col_nom, prenom::transform_col_prenom, raison_sociale::transform_col_raison_sociale, telephone::transform_col_telephone};
+
+use super::{
+    config::{Transform, CIVILITE_MAP, SPECIAL_CIVILITIES},
+    schema::Jdd,
 };
 
-pub enum Transform {
-    Nom,
-    Prenom,
-    Civilite,
-    Email,
-    RaisonSociale,
-    Telephone,
-    // Add other variants as needed
-}
-
-// Start of string normalization functions
-fn strip_accent(text: &str) -> String {
-    text.chars()
-        .map(|c| match c.to_lowercase().next().unwrap() {
-            'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' => {
-                if c.is_uppercase() {
-                    'A'
-                } else {
-                    'a'
-                }
-            }
-            'è' | 'é' | 'ê' | 'ë' => {
-                if c.is_uppercase() {
-                    'E'
-                } else {
-                    'e'
-                }
-            }
-            'ì' | 'í' | 'î' | 'ï' => {
-                if c.is_uppercase() {
-                    'I'
-                } else {
-                    'i'
-                }
-            }
-            'ò' | 'ó' | 'ô' | 'õ' | 'ö' => {
-                if c.is_uppercase() {
-                    'O'
-                } else {
-                    'o'
-                }
-            }
-            'ù' | 'ú' | 'û' | 'ü' => {
-                if c.is_uppercase() {
-                    'U'
-                } else {
-                    'u'
-                }
-            }
-            'ç' => {
-                if c.is_uppercase() {
-                    'C'
-                } else {
-                    'c'
-                }
-            }
-            'ñ' => {
-                if c.is_uppercase() {
-                    'N'
-                } else {
-                    'n'
-                }
-            }
-            _ => c,
-        })
-        .collect()
-}
-// End of string normalization functions
-
-// Start of transformation functions
-fn transform_nom(opt_text: Option<&str>) -> Option<String> {
-    #[inline]
-    fn replace_delimiters_inside_text(
-        text: &str,
-        pattern: &str,
-        replacement: &str,
-    ) -> Result<String, regex::Error> {
-        let re = Regex::new(pattern)?;
-
-        let text = re.replace_all(text, |caps: &regex::Captures| {
-            if let (Some(start), Some(end)) =
-                (caps.get(0).map(|m| m.start()), caps.get(0).map(|m| m.end()))
-            {
-                let before_is_space = start > 0
-                    && text
-                        .chars()
-                        .nth(start - 1)
-                        .map(|c| c.is_whitespace())
-                        .unwrap_or(false);
-                let after_is_space = end < text.len()
-                    && text
-                        .chars()
-                        .nth(end)
-                        .map(|c| c.is_whitespace())
-                        .unwrap_or(false);
-
-                if before_is_space && after_is_space {
-                    Cow::Borrowed(replacement)
-                } else {
-                    Cow::Owned(format!(" {} ", replacement))
-                }
-            } else {
-                Cow::Borrowed(replacement)
-            }
-        });
-
-        let re = Regex::new(r"\s+")?;
-        let text = re.replace_all(&text, " ").trim().to_string();
-        Ok(text)
-    }
-
-    opt_text.and_then(|text| {
-        let text = text.trim();
-        if text.is_empty() {
-            return None;
-        }
-
-        let text = strip_accent(text).to_uppercase();
-
-        let re = Regex::new(r"^[^a-zA-ZÀ-ÿ\s]+|[^a-zA-ZÀ-ÿ\s]+$").ok()?;
-        let text = re.replace_all(&text, "").to_string();
-
-        let text = replace_delimiters_inside_text(&text, r"//|_|/|&", "ET").ok()?;
-
-        let re = Regex::new(r"[^a-zA-Z0-9À-ÿ\s\-\'’]").ok()?;
-        let text = re.replace_all(&text, "").to_string();
-
-        let text = Regex::new(r"\-+").ok()?.replace_all(&text, " ").to_string();
-        let text = Regex::new(r"\s+").ok()?.replace_all(&text, " ").to_string();
-
-        Some(text)
-    })
-}
-
-fn transform_prenom(opt_text: Option<&str>) -> Option<String> {
-    #[inline]
-    fn format_name_part(part: &str) -> String {
-        let sub_parts: Vec<&str> = part.split_whitespace().collect();
-        let formatted_sub_parts: Vec<String> = sub_parts
-            .iter()
-            .map(|&sub_part| {
-                let mut chars = sub_part.chars();
-                let first_char = strip_accent(
-                    chars
-                        .next()
-                        .expect("Invalid character")
-                        .to_uppercase()
-                        .collect::<String>()
-                        .as_str(),
-                );
-                let remaining_chars = chars.as_str().to_lowercase();
-                format!("{}{}", first_char, remaining_chars)
-            })
-            .collect();
-        formatted_sub_parts.join(" ")
-    }
-
-    #[inline]
-    fn process_text(text: &str) -> String {
-        let text = text.trim();
-        let text = Regex::new(r"\s+")
-            .unwrap()
-            .replace_all(text, " ")
-            .to_string();
-        let parts: Vec<&str> = text.split('-').collect();
-        let formatted_parts: Vec<String> = parts
-            .iter()
-            .map(|&part| {
-                if part.trim().len() == 1 {
-                    part.trim().to_string()
-                } else {
-                    format_name_part(part)
-                }
-            })
-            .collect();
-        formatted_parts.join("-")
-    }
-
-    #[inline]
-    fn remove_special_characters(text: &str) -> String {
-        let pattern = Regex::new(r"[^\u{00C0}-\u{00FF}a-zA-Z\s\-\'’&]").expect("Invalid pattern");
-        let text = pattern.replace_all(text, "");
-        let text = Regex::new(r"&+")
-            .expect("Invalid pattern")
-            .replace_all(&text, " ")
-            .to_string();
-        text
-    }
-
-    opt_text.and_then(|text| {
-        if text.len() == 1 {
-            let pattern = Regex::new(r"[^a-zA-Z\u{00C0}-\u{00FF}]").unwrap();
-            let text = pattern.replace_all(text, "").to_string();
-            if text.is_empty() {
-                None
-            } else {
-                Some(text)
-            }
-        } else {
-            let text = remove_special_characters(text);
-            let text = process_text(&text);
-            Some(text)
-        }
-    })
-}
-
-fn transform_civilite(opt_text: Option<&str>) -> Option<String> {
-    opt_text.and_then(|text| {
-        let text = strip_accent(text.trim()).to_uppercase().to_string();
-
-        if SPECIAL_CIVILITIES.contains(&text.as_str()) {
-            return None;
-        }
-
-        let re = Regex::new(r"[.,/&\\]").unwrap();
-        let text = re.replace_all(&text, " ");
-
-        let parts: Vec<&str> = text.split_whitespace().collect();
-        let mut full_titles = vec![];
-
-        for part in parts {
-            if let Some(title_ref) = CIVILITE_MAP.get(part) {
-                let title = title_ref.to_string();
-                if !full_titles.contains(&title) {
-                    full_titles.push(title.clone());
-                }
-            }
-        }
-
-        let mut result = vec![];
-
-        if full_titles.contains(&"MONSIEUR".to_string()) {
-            result.push("MONSIEUR".to_string());
-        }
-
-        if full_titles.contains(&"MADAME".to_string()) {
-            result.push("MADAME".to_string());
-        }
-
-        if result.is_empty() {
-            None
-        } else {
-            Some(result.join(" "))
-        }
-    })
-}
-
-fn transform_email(opt_email: Option<&str>) -> Option<String> {
-    // Define a regex for valid email structure
-    let email_re = Regex::new(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$").unwrap();
-
-    opt_email.and_then(|email| {
-        // Remove spaces and convert to uppercase
-        let email = email.replace(' ', "").to_uppercase();
-        // Remove accents and specific characters
-        let email = strip_accent(&email)
-            .replace(&['\'', '’', '&'][..], "")
-            .replace("@.", "@");
-
-        // Validate email structure
-        if !email_re.is_match(&email) {
-            return None;
-        }
-
-        // Split email to get the domain part
-        let parts: Vec<&str> = email.split('@').collect();
-        if parts.len() != 2 {
-            return None;
-        }
-
-        let domain = parts[1];
-        let domain_parts: Vec<&str> = domain.split('.').collect();
-        if domain_parts.len() < 2 {
-            return None;
-        }
-
-        // Check for at least 2 characters before the extension
-        if domain_parts[domain_parts.len() - 2].len() < 2 {
-            return None;
-        }
-
-        // Ensure the extension length is between 2 and 4 characters
-        let extension_len = domain_parts.last().unwrap().len();
-        if !(2..=4).contains(&extension_len) {
-            return None;
-        }
-
-        // Remove hyphens in the domain
-        let domain = domain.replace('-', "");
-
-        // Reconstruct and return the transformed email
-        Some(format!("{}@{}", parts[0], domain))
-    })
-}
-
-fn transform_raison_sociale(opt_text: Option<&str>) -> Option<String> {
-    opt_text.map(|text| {
-        // Remove accents by replacing characters
-        let text = strip_accent(text);
-        // Handle quotes at the beginning and end of the string
-        let text = if text.starts_with('"') && text.ends_with('"') {
-            &text[1..text.len() - 1]
-        } else {
-            &text
-        };
-
-        // Replace double quotes with a single quote
-        let text = text.replace("\"\"", "\"");
-
-        // Convert to uppercase and handle special characters
-        let text: String = text
-            .chars()
-            .map(|c| match c {
-                'ß' => "ß".to_string(),
-                _ => c.to_uppercase().to_string(),
-            })
-            .collect();
-
-        Some(text)
-    })?
-}
-
-pub fn transform_telephone(opt_phone_number: Option<&str>) -> Option<String> {
-    #[inline]
-    fn remove_non_digits(input: &str) -> String {
-        input.chars().filter(|c| c.is_ascii_digit()).collect()
-    }
-    #[inline]
-    fn is_paid_service(number: &str, prefixes: &HashSet<&str>) -> bool {
-        prefixes.iter().any(|&prefix| number.starts_with(prefix))
-    }
-    opt_phone_number.and_then(|number| {
-        let number = remove_non_digits(number.trim());
-        let number = number.as_str();
-        let paid_prefixes: HashSet<&str> = ["81", "82", "83", "87", "89"].iter().copied().collect();
-
-        match number.len() {
-            10 if number.starts_with('0') && !is_paid_service(&number[1..], &paid_prefixes) => {
-                Some(format!(
-                    "+33 {} {} {} {} {}",
-                    &number[1..2],
-                    &number[2..4],
-                    &number[4..6],
-                    &number[6..8],
-                    &number[8..10]
-                ))
-            }
-            11 if number.starts_with("33") && !is_paid_service(&number[2..], &paid_prefixes) => {
-                Some(format!(
-                    "+33 {} {} {} {} {}",
-                    &number[2..3],
-                    &number[3..5],
-                    &number[5..7],
-                    &number[7..9],
-                    &number[9..11]
-                ))
-            }
-            12 if number.starts_with("00") && !is_paid_service(&number[2..], &paid_prefixes) => {
-                Some(format!(
-                    "+{} {} {} {} {} {}",
-                    &number[2..4],
-                    &number[4..5],
-                    &number[5..7],
-                    &number[7..9],
-                    &number[9..11],
-                    &number[11..13]
-                ))
-            }
-            12 if number.starts_with("+33") && !is_paid_service(&number[3..], &paid_prefixes) => {
-                Some(format!(
-                    "+33 {} {} {} {} {}",
-                    &number[3..4],
-                    &number[4..6],
-                    &number[6..8],
-                    &number[8..10],
-                    &number[10..12]
-                ))
-            }
-            12 if number.starts_with("330") && !is_paid_service(&number[3..], &paid_prefixes) => {
-                Some(format!(
-                    "+33 {} {} {} {} {}",
-                    &number[3..4],
-                    &number[4..6],
-                    &number[6..8],
-                    &number[8..10],
-                    &number[10..12]
-                ))
-            }
-            9 if !is_paid_service(number, &paid_prefixes) => Some(format!(
-                "+33 {} {} {} {} {}",
-                &number[0..1],
-                &number[1..3],
-                &number[3..5],
-                &number[5..7],
-                &number[7..9]
-            )),
-            _ => None,
-        }
-    })
-}
-// End of transformation functions
-
-// Start of column transformation functions
-pub fn transform_string_series<F>(series: &Series, transform_fn: F) -> PolarsResult<Option<Series>>
-where
-    F: Fn(Option<&str>) -> Option<String> + Send + Sync + 'static,
-{
-    let ca = series.str()?;
-    let transformed = ca.into_iter().map(transform_fn).collect::<StringChunked>();
-    Ok(Some(transformed.into_series()))
-}
-
-fn transform_col_nom(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_nom)
-}
-
-fn transform_col_prenom(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_prenom)
-}
-
-fn transform_col_civilite(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_civilite)
-}
-
-fn transform_col_email(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_email)
-}
-
-fn transform_col_raison_sociale(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_raison_sociale)
-}
-
-fn transform_col_telephone(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_telephone)
-}
+mod ape;
+mod civilite;
+mod code_naf;
+mod email;
+mod libelle_naf;
+mod nom;
+mod prenom;
+mod raison_sociale;
+mod siren;
+mod siret;
+mod telephone;
+mod utils;
 
 fn get_transform_col_fn(transform: &Transform) -> impl Fn(&Series) -> PolarsResult<Option<Series>> {
     match transform {
@@ -470,45 +49,11 @@ pub fn col_with_udf_expr(column: Jdd, transform: Transform) -> Expr {
     )
 }
 
-pub fn col_code_naf_with_polars_expr() -> Expr {
-    // Define a Polars expression to clean and transform the code_naf column
-    when(
-        col(Jdd::CodeNaf.as_str())
-            .str()
-            .replace(lit("[.\\-_,;]"), lit(""), false)
-            .str()
-            .extract(lit(r"^(\d{4})[a-zA-Z]$"), 1)
-            .is_null(),
-    )
-    .then(lit(NULL).alias(Jdd::CodeNaf.as_str()))
-    .otherwise(
-        concat_str(
-            [
-                col(Jdd::CodeNaf.as_str())
-                    .str()
-                    .replace(lit("[.\\-_,;]"), lit(""), false)
-                    .str()
-                    .extract(lit(r"^(\d{4})[a-zA-Z]$"), 1),
-                col(Jdd::CodeNaf.as_str())
-                    .str()
-                    .replace(lit("[.\\-_,;]"), lit(""), false)
-                    .str()
-                    .extract(lit(r"^\d{4}([a-zA-Z])$"), 1)
-                    .str()
-                    .to_uppercase(),
-            ],
-            "",
-            true,
-        )
-        .alias(Jdd::CodeNaf.as_str()),
-    )
-}
-// End of column transformation functions
-
 // Unit tests
 #[cfg(test)]
 mod tests {
     use super::*;
+    use polars::{datatypes::AnyValue, df, lazy::frame::IntoLazy};
 
     #[test]
     fn test_transform_nom() {
@@ -702,7 +247,6 @@ mod tests {
         }
     }
 
-    use polars::{datatypes::AnyValue, df, lazy::frame::IntoLazy};
     #[test]
     // Sample function to test col_code_naf_with_polars_expr
     fn test_col_code_naf_with_polars_expr() {
@@ -746,6 +290,523 @@ mod tests {
             .expect("Result column not found");
         let expected_series = expected_df
             .column(Jdd::CodeNaf.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_email_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Email.as_str() => &[
+                Some("Lucas31@gmail.com"),
+                Some("Lucas 31@gmail.com"),
+                Some("Lucàs31@gmail.com"),
+                Some("Luc’’as31@gmail.com"),
+                Some("Lucas31@gmail.com"),
+                Some("@gmail.com"),
+                Some("Lucas31gmail.com"),
+                Some("Lucas31@g.com"),
+                Some("Lucas31@siapartnersrue(XXXX....XXXX).com"),
+                Some("Lucas31@"),
+                Some("Lucas31@gmail.c-om"),
+                Some("Lucas31@.gmail.com"),
+                Some("Lucas31@gmail."),
+                Some("Lucas31@gmail..com"),
+                Some("Lucas31@gmail.f"),
+                Some("Lucas31@gmail.commmee"),
+                None,
+                Some("em&ms@gmail..com")
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_email_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df);
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Email.as_str() => &[
+                Some("LUCAS31@GMAIL.COM"),
+                Some("LUCAS31@GMAIL.COM"),
+                Some("LUCAS31@GMAIL.COM"),
+                Some("LUCAS31@GMAIL.COM"),
+                Some("LUCAS31@GMAIL.COM"),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("LUCAS31@GMAIL.COM"),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Email.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Email.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_nom_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Nom.as_str() => &[
+                Some("&Carre & Lagrave&"),
+                Some("/Sébastien / Pascal/"),
+                Some("Carre_/"),
+                Some("Brøgger"),
+                None,
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_nom_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df);
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Nom.as_str() => &[
+                Some("CARRE ET LAGRAVE"),
+                Some("SEBASTIEN ET PASCAL"),
+                Some("CARRE"),
+                Some("BRØGGER"),
+                None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Nom.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Nom.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_prenom_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Prenom.as_str() => &[
+            Some("amélie"),
+            Some("LOUCA"),
+            Some("H-an"),
+            Some("élie"),
+            Some("anne-marie"),
+            Some("anne marie"),
+            Some("Hélène*3"),
+            Some("Hélène&Adelin"),
+            None,
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_prenom_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df);
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Prenom.as_str() => &[
+            Some("Amélie"),
+            Some("Louca"),
+            Some("H-An"),
+            Some("Elie"),
+            Some("Anne-Marie"),
+            Some("Anne Marie"),
+            Some("Hélène"),
+            Some("Hélène Adelin"),
+            None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Prenom.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Prenom.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_raison_sociale_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::RaisonSociale.as_str() => &[
+            Some("\"ED\"\"BANGER\""),
+            Some("Imagin&tiff_"),
+            Some("S’ociété"),
+            Some("VECCHIA/"),
+            Some("//MONEYY//"),
+            Some("Straße"),
+            Some("Ve&ccio"),
+            Some("édouardservices"),
+            Some("imagin//"),
+            Some("HecøTOR"),
+            Some("ed'GAR"),
+            Some("Société dupont"),
+            Some("villiers"),
+            Some("Paul&JO"),
+            Some("\"\"vanescènce\""),
+            Some("Brøgger"),
+            Some("A"),
+            None,
+            Some("TIGER_Milk"),
+            Some("漢字"),
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_raison_sociale_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df.head(Some(7)));
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::RaisonSociale.as_str() => &[
+            Some("ED\"BANGER"),
+            Some("IMAGIN&TIFF_"),
+            Some("S’OCIETE"),
+            Some("VECCHIA/"),
+            Some("//MONEYY//"),
+            Some("STRAßE"),
+            Some("VE&CCIO"),
+            Some("EDOUARDSERVICES"),
+            Some("IMAGIN//"),
+            Some("HECØTOR"),
+            Some("ED'GAR"),
+            Some("SOCIETE DUPONT"),
+            Some("VILLIERS"),
+            Some("PAUL&JO"),
+            Some("\"VANESCENCE"),
+            Some("BRØGGER"),
+            Some("A"),
+            None,
+            Some("TIGER_MILK"),
+            Some("漢字"),
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::RaisonSociale.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::RaisonSociale.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_siren_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Siren.as_str() => &[
+                Some("732829320"),
+                Some("732829320111"),
+                None
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_siren_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df.head(Some(7)));
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Siren.as_str() => &[
+                Some("732829320"),
+                None,
+                None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Siren.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Siren.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_ape_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Ape.as_str() => &[
+                Some("62.01z"),
+                Some("62,01z"),
+                Some("94z"),
+                Some("12325"),
+                Some("a2325"),
+                None
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_ape_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df.head(Some(7)));
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Ape.as_str() => &[
+                Some("6201Z"),
+                Some("6201Z"),
+                None,
+                None,
+                None,
+                None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Ape.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Ape.as_str())
+            .expect("Expected column not found");
+
+        // Ensure the lengths of both Series are the same
+        assert_eq!(
+            result_series.len(),
+            expected_series.len(),
+            "Series lengths do not match"
+        );
+
+        // Compare each element in the Series
+        for (result_value, expected_value) in result_series.iter().zip(expected_series.iter()) {
+            match (result_value.clone(), expected_value.clone()) {
+                (AnyValue::String(result_str), AnyValue::String(expected_str)) => {
+                    assert_eq!(result_str, expected_str, "Values do not match")
+                }
+                (AnyValue::Null, AnyValue::Null) => {} // Both are None, so they are equal
+                _ => panic!(
+                    "Mismatched value types: {:?} vs {:?}",
+                    result_value, expected_value
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn test_col_siret_with_polars_expr() {
+        // Create a DataFrame with test data
+        let df = df![
+            Jdd::Siret.as_str() => &[
+                Some("443 169 524 00120"),
+                Some("443.169.524.00120"),
+                Some("443 169 524 GH780"),
+                Some("4ZT 169 524 00120"),
+                None
+            ]
+        ]
+        .expect("DataFrame creation failed");
+
+        // Apply the expression
+        let result_df = df
+            .clone()
+            .lazy()
+            .select(&[col_siret_with_polars_expr()])
+            .collect()
+            .expect("DataFrame collection failed");
+
+        println!("{:#?}", result_df.head(Some(7)));
+        // Expected DataFrame
+        let expected_df = df![
+            Jdd::Siret.as_str() => &[
+                Some("44316952400120"),
+                Some("44316952400120"),
+                None,
+                None,
+                None
+            ]
+        ]
+        .expect("Expected DataFrame creation failed");
+
+        // Extract the Series for comparison
+        let result_series = result_df
+            .column(Jdd::Siret.as_str())
+            .expect("Result column not found");
+        let expected_series = expected_df
+            .column(Jdd::Siret.as_str())
             .expect("Expected column not found");
 
         // Ensure the lengths of both Series are the same

@@ -1,6 +1,12 @@
 use artemis_rs::config::FILES_PATH;
+use artemis_rs::jdd::config::Transform;
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
-use artemis_rs::jdd::transforms::{col_code_naf_with_polars_expr, col_with_udf_expr, Transform};
+use artemis_rs::jdd::transforms::{
+    col_ape_with_polars_expr, col_code_naf_with_polars_expr, col_email_with_polars_expr,
+    col_libelle_naf_with_polars_expr, col_nom_with_polars_expr, col_prenom_with_polars_expr,
+    col_raison_sociale_with_polars_expr, col_siren_with_polars_expr, col_siret_with_polars_expr,
+    col_with_udf_expr,
+};
 use dotenv::dotenv;
 use log::info;
 use polars::prelude::*;
@@ -66,13 +72,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let df = struct_to_dataframe(&rows);
 
     let lf = df.lazy().with_columns(vec![
-        col_with_udf_expr(Jdd::Nom, Transform::Nom),
-        col_with_udf_expr(Jdd::Prenom, Transform::Prenom),
+        col_nom_with_polars_expr(),
+        col_prenom_with_polars_expr(),
         col_with_udf_expr(Jdd::Civilite, Transform::Civilite),
-        col_with_udf_expr(Jdd::Email, Transform::Email),
-        col_with_udf_expr(Jdd::RaisonSociale, Transform::RaisonSociale),
+        col_email_with_polars_expr(),
         col_with_udf_expr(Jdd::Telephone, Transform::Telephone),
+        col_raison_sociale_with_polars_expr(),
         col_code_naf_with_polars_expr(),
+        col_ape_with_polars_expr(),
+        col_siret_with_polars_expr(),
+        col_siren_with_polars_expr(),
+        col_libelle_naf_with_polars_expr(),
     ]);
 
     let mut df = lf.collect()?;
