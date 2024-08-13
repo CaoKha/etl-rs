@@ -5,7 +5,7 @@ use polars::{
     series::{IntoSeries, Series},
 };
 
-use crate::jdd::schema::Jdd;
+use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
 
 use super::utils::{strip_accent, transform_string_series};
 
@@ -40,8 +40,8 @@ pub fn transform_col_raison_sociale(series: &Series) -> PolarsResult<Option<Seri
     transform_string_series(series, transform_raison_sociale)
 }
 
-pub fn col_raison_sociale_with_polars_expr() -> Expr {
-    let handle_quotes = col(Jdd::RaisonSociale.as_str()).map(
+fn transform_col_raison_sociale_expr(col_rs: &str) -> Expr {
+    let handle_quotes = col(col_rs).map(
         |series| {
             let result = series
                 .str()?
@@ -72,12 +72,20 @@ pub fn col_raison_sociale_with_polars_expr() -> Expr {
         GetOutput::same_type(),
     );
 
-    handle_quotes.alias(Jdd::RaisonSociale.as_str())
+    handle_quotes.alias(col_rs)
+}
+
+pub fn col_raison_sociale_with_polars_expr(se: SchemasEnum) -> Expr {
+    match se {
+        SchemasEnum::Jdd => transform_col_raison_sociale_expr(Jdd::RaisonSociale.as_str()),
+        SchemasEnum::Hdd => transform_col_raison_sociale_expr(Hdd::RaisonSociale.as_str()),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::schemas::AsString;
     use polars::{datatypes::AnyValue, df, lazy::frame::IntoLazy};
 
     #[test]
@@ -146,7 +154,7 @@ mod tests {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_raison_sociale_with_polars_expr()])
+            .select(&[col_raison_sociale_with_polars_expr(SchemasEnum::Jdd)])
             .collect()
             .expect("DataFrame collection failed");
 

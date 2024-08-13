@@ -1,39 +1,35 @@
+use crate::schemas::{jdd::Jdd, AsString};
 use polars::{
-    lazy::dsl::{col, concat_str, lit, when, Expr},
-    prelude::NULL,
+    datatypes::StringChunked,
+    lazy::dsl::{col, lit, Expr, GetOutput},
+    series::IntoSeries,
 };
 
-use crate::jdd::schema::Jdd;
-
-pub fn col_ape_with_polars_expr() -> Expr {
-    // Clean the column by removing special characters
-    let clean_col = col(Jdd::Ape.as_str())
+pub fn col_siren_with_polars_expr() -> Expr {
+    col(Jdd::Siren.as_str())
         .str()
-        .replace_all(lit(r"[.\-_,]"), lit(""), false);
-
-    // Extract the first four digits
-    let extracted_digits = clean_col
-        .clone()
-        .str()
-        .extract(lit(r"^(\d{4})[a-zA-Z]?$"), 1);
-    // Extract the optional letter at the end and convert to uppercase
-    let extracted_letter = clean_col
-        .clone()
-        .str()
-        .extract(lit(r"^\d{4}([a-zA-Z])$"), 1)
-        .str()
-        .to_uppercase();
-
-    // Create the new column based on the conditions
-    when(
-        clean_col
-            .str()
-            .extract(lit(r"^(\d{4})[a-zA-Z]$"), 1)
-            .is_null(),
-    )
-    .then(lit(NULL))
-    .otherwise(concat_str([extracted_digits, extracted_letter], "", true))
-    .alias(Jdd::Ape.as_str())
+        .replace_all(lit(r"-|\s"), lit(""), false) // Remove dashes and spaces
+        .map(
+            |series| {
+                let result = series
+                    .str()?
+                    .into_iter()
+                    .map(|opt_text| {
+                        opt_text.and_then(|text| {
+                            let cleaned = text.to_string();
+                            if cleaned.chars().all(char::is_numeric) && cleaned.len() == 9 {
+                                Some(cleaned)
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .collect::<StringChunked>();
+                Ok(Some(result.into_series()))
+            },
+            GetOutput::same_type(),
+        )
+        .alias(Jdd::Siren.as_str())
 }
 
 #[cfg(test)]
@@ -42,15 +38,12 @@ mod test {
     use polars::{datatypes::AnyValue, df, lazy::frame::IntoLazy};
 
     #[test]
-    fn test_col_ape_with_polars_expr() {
+    fn test_col_siren_with_polars_expr() {
         // Create a DataFrame with test data
         let df = df![
-            Jdd::Ape.as_str() => &[
-                Some("62.01z"),
-                Some("62,01z"),
-                Some("94z"),
-                Some("12325"),
-                Some("a2325"),
+            Jdd::Siren.as_str() => &[
+                Some("732829320"),
+                Some("732829320111"),
                 None
             ]
         ]
@@ -60,18 +53,15 @@ mod test {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_ape_with_polars_expr()])
+            .select(&[col_siren_with_polars_expr()])
             .collect()
             .expect("DataFrame collection failed");
 
         println!("{:#?}", result_df.head(Some(7)));
         // Expected DataFrame
         let expected_df = df![
-            Jdd::Ape.as_str() => &[
-                Some("6201Z"),
-                Some("6201Z"),
-                None,
-                None,
+            Jdd::Siren.as_str() => &[
+                Some("732829320"),
                 None,
                 None
             ]
@@ -80,10 +70,10 @@ mod test {
 
         // Extract the Series for comparison
         let result_series = result_df
-            .column(Jdd::Ape.as_str())
+            .column(Jdd::Siren.as_str())
             .expect("Result column not found");
         let expected_series = expected_df
-            .column(Jdd::Ape.as_str())
+            .column(Jdd::Siren.as_str())
             .expect("Expected column not found");
 
         // Ensure the lengths of both Series are the same

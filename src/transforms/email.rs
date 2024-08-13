@@ -6,7 +6,7 @@ use polars::{
 };
 use regex::Regex;
 
-use crate::jdd::schema::Jdd;
+use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
 
 use super::utils::{strip_accent, transform_string_series};
 
@@ -62,10 +62,10 @@ pub fn transform_col_email(series: &Series) -> PolarsResult<Option<Series>> {
     transform_string_series(series, transform_email)
 }
 
-pub fn col_email_with_polars_expr() -> Expr {
+fn transform_col_email_expr(col_email: &str) -> Expr {
     let valid_email_re = r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$";
-    // Define a Polars expression to clean and transform the email column
-    col(Jdd::Email.as_str())
+
+    col(col_email)
         .str()
         .to_uppercase() // Convert to uppercase
         .str()
@@ -121,7 +121,14 @@ pub fn col_email_with_polars_expr() -> Expr {
             },
             GetOutput::same_type(),
         )
-        .alias(Jdd::Email.as_str())
+        .alias(col_email)
+}
+
+pub fn col_email_with_polars_expr(se: SchemasEnum) -> Expr {
+    match se {
+        SchemasEnum::Jdd => transform_col_email_expr(Jdd::Email.as_str()),
+        SchemasEnum::Hdd => transform_col_email_expr(Hdd::Email.as_str()),
+    }
 }
 
 #[cfg(test)]
@@ -207,7 +214,7 @@ mod tests {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_email_with_polars_expr()])
+            .select(&[col_email_with_polars_expr(SchemasEnum::Jdd)])
             .collect()
             .expect("DataFrame collection failed");
 

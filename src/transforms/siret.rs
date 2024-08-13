@@ -1,13 +1,12 @@
+use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
 use polars::{
     datatypes::StringChunked,
     lazy::dsl::{col, Expr, GetOutput},
     series::IntoSeries,
 };
 
-use crate::jdd::schema::Jdd;
-
-pub fn col_siret_with_polars_expr() -> Expr {
-    col(Jdd::Siret.as_str())
+fn transform_col_siret_expr(col_siret: &str) -> Expr {
+    col(col_siret)
         .map(
             |series| {
                 let result = series
@@ -31,12 +30,20 @@ pub fn col_siret_with_polars_expr() -> Expr {
             },
             GetOutput::same_type(),
         )
-        .alias(Jdd::Siret.as_str())
+        .alias(col_siret)
+}
+
+pub fn col_siret_with_polars_expr(se: SchemasEnum) -> Expr {
+    match se {
+        SchemasEnum::Jdd => transform_col_siret_expr(Jdd::Siret.as_str()),
+        SchemasEnum::Hdd => transform_col_siret_expr(Hdd::Siret.as_str()),
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::schemas::AsString;
     use polars::{datatypes::AnyValue, df, lazy::frame::IntoLazy};
 
     #[test]
@@ -57,7 +64,7 @@ mod test {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_siret_with_polars_expr()])
+            .select(&[col_siret_with_polars_expr(SchemasEnum::Jdd)])
             .collect()
             .expect("DataFrame collection failed");
 

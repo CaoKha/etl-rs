@@ -4,9 +4,16 @@
     "topic": "jdd"
   },
   "csv": {
-    "table_name": "jdd",
-    "file_path": "files/JDD_normalisation.csv",
-    "number_of_rows": 57
+    "jdd": {
+      "table_name": "jdd",
+      "file_path": "files/JDD_normalisation.csv",
+      "number_of_rows": 57
+    },
+    "hdd": {
+      "table_name": "hdd",
+      "file_path": "files/HDD_deduplication.csv",
+      "number_of_rows": 25
+    }
   },
   "mongo": {
     "database": "raw",

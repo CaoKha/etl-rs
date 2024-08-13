@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Configuration loaded successfully");
 
-    let json_objects = match csv_to_json(&config.csv.file_path) {
+    let json_objects = match csv_to_json(&config.csv.jdd.file_path) {
         Ok(objects) => objects,
         Err(e) => {
             error!("Failed to convert CSV to JSON: {}", e);
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("CSV converted to JSON successfully");
 
-    if let Err(e) = push_json_to_kafka(&json_objects, &config.kafka, &config.csv).await {
+    if let Err(e) = push_json_to_kafka(&json_objects, &config.kafka, &config.csv.jdd).await {
         error!("Failed to push JSON to Kafka: {}", e);
         return Err(e);
     }

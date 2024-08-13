@@ -1,4 +1,5 @@
 use sea_query::Iden;
+use super::AsString;
 
 #[derive(Iden)]
 pub enum Jdd {
@@ -21,8 +22,8 @@ pub enum Jdd {
     Pays,
 }
 
-impl Jdd {
-    pub fn as_str(&self) -> &'static str {
+impl AsString for Jdd {
+    fn as_str(&self) -> &'static str {
         match self {
             Jdd::Table => "JDD",
             Jdd::Id => "ID",
@@ -44,6 +45,7 @@ impl Jdd {
         }
     }
 }
+
 #[derive(Debug, serde::Deserialize, serde::Serialize, sqlx::FromRow)]
 pub struct JddSchema {
     #[serde(rename = "RAISON_SOCIALE")]

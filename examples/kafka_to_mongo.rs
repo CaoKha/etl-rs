@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Configuration loaded successfully");
 
     let consumer = create_kafka_base_consumer(&config.kafka.bootstrap_servers, "group-jdd");
-    let messages = read_messages_from_offset_range(&consumer, &config.kafka.topic, 0, 0, &config.csv.number_of_rows - 1).await;
+    let messages = read_messages_from_offset_range(&consumer, &config.kafka.topic, 0, 0, &config.csv.jdd.number_of_rows - 1).await;
     let mongo_uri = format!(
         "mongodb://{}:{}@{}:{}/",
         env::var("MONGO_ROOT_USR")?,

@@ -1,11 +1,10 @@
+use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
 use polars::{
     datatypes::StringChunked,
     error::PolarsResult,
     series::{IntoSeries, Series},
 };
 use regex::Regex;
-
-use crate::jdd::schema::Jdd;
 
 use super::utils::{strip_accent, transform_string_series};
 use polars::lazy::dsl::{col, lit, Expr, GetOutput};
@@ -86,12 +85,12 @@ pub fn transform_col_prenom(series: &Series) -> PolarsResult<Option<Series>> {
     transform_string_series(series, transform_prenom)
 }
 
-pub fn col_prenom_with_polars_expr() -> Expr {
+fn transform_col_prenom_expr(col_prenom: &str) -> Expr {
     let re_whitespace = Regex::new(r"\s+").unwrap();
     let re_special_chars = Regex::new(r"[^\u{00C0}-\u{00FF}a-zA-Z\s\-\'’&]").unwrap();
     let re_ampersands = Regex::new(r"&+").unwrap();
 
-    col(Jdd::Prenom.as_str())
+    col(col_prenom)
         .str()
         .replace_all(lit(r"^\s+|\s+$"), lit(""), false) // Trim leading/trailing spaces
         .map(
@@ -141,7 +140,14 @@ pub fn col_prenom_with_polars_expr() -> Expr {
             },
             GetOutput::same_type(),
         ) // Apply transformations
-        .alias(Jdd::Prenom.as_str()) // Alias the output column name
+        .alias(col_prenom) // Alias the output column name
+}
+
+pub fn col_prenom_with_polars_expr(se: SchemasEnum) -> Expr {
+    match se {
+        SchemasEnum::Jdd => transform_col_prenom_expr(Jdd::Prenom.as_str()),
+        SchemasEnum::Hdd => transform_col_prenom_expr(Hdd::Prenom.as_str()),
+    }
 }
 
 #[cfg(test)]
@@ -191,7 +197,7 @@ mod tests {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_prenom_with_polars_expr()])
+            .select(&[col_prenom_with_polars_expr(SchemasEnum::Jdd)])
             .collect()
             .expect("DataFrame collection failed");
 

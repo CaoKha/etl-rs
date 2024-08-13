@@ -26,8 +26,8 @@ polars = { version = "0.41.3", features = [
   "regex",
   "concat_str",
 ] }
-sea-query = "0.30.7"
-sea-query-binder = { version = "0.5.0", features = ["sqlx-postgres"] }
+sea-query = "0.31"
+sea-query-binder = { version = "0.6.0", features = ["sqlx-postgres"] }
 regex = "1.10"
 lazy_static = "1.5"
 unidecode = "0.3"

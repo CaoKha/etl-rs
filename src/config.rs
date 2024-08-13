@@ -1,4 +1,6 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
@@ -34,9 +36,15 @@ pub struct MongoConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct CsvListConfig {
+    pub jdd: CsvConfig,
+    pub hdd: CsvConfig,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub kafka: KafkaConfig,
-    pub csv: CsvConfig,
+    pub csv: CsvListConfig,
     pub mongo: MongoConfig,
 }
 
@@ -48,4 +56,46 @@ impl Config {
             .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
         Ok(config)
     }
+}
+
+pub const SPECIAL_CIVILITIES: [&str; 9] = [
+    "DOCTEUR",
+    "GÉNÉRAL",
+    "COMPTE",
+    "INGÉNIEUR GÉNÉRAL",
+    "PRÉFET",
+    "PROFESSEUR",
+    "MONSEIGNEUR",
+    "SŒUR",
+    "COMMISSAIRE",
+];
+
+lazy_static! {
+    pub static ref CIVILITE_MAP: HashMap<&'static str, &'static str> = {
+        let mut map = HashMap::new();
+        map.insert("MONSIEUR", "MONSIEUR");
+        map.insert("M", "MONSIEUR");
+        map.insert("M.", "MONSIEUR");
+        map.insert("MR", "MONSIEUR");
+        map.insert("MM", "MONSIEUR");
+        map.insert("M(ESPACE)", "MONSIEUR");
+        map.insert("MADAME", "MADAME");
+        map.insert("MME", "MADAME");
+        map.insert("MRS", "MADAME");
+        map.insert("MS", "MADAME");
+        map.insert("MLLE", "MADAME");
+        map.insert("MAD", "MADAME");
+        map.insert("MADEMOISELLE", "MADAME");
+        map
+    };
+}
+
+pub enum Transform {
+    Nom,
+    Prenom,
+    Email,
+    Civilite,
+    RaisonSociale,
+    Telephone,
+    // Add other variants as needed
 }

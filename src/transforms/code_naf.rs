@@ -1,9 +1,8 @@
+use crate::schemas::{jdd::Jdd, AsString};
 use polars::{
     lazy::dsl::{col, concat_str, lit, when, Expr},
     prelude::NULL,
 };
-
-use crate::jdd::schema::Jdd;
 
 pub fn col_code_naf_with_polars_expr() -> Expr {
     // Define a Polars expression to clean and transform the code_naf column

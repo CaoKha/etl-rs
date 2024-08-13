@@ -1,12 +1,12 @@
-use std::borrow::Cow;
-
+use crate::schemas::hdd::Hdd;
+use crate::schemas::jdd::Jdd;
+use crate::schemas::{AsString, SchemasEnum};
 use polars::datatypes::StringChunked;
 use polars::lazy::dsl::{col, lit, Expr, GetOutput};
 use polars::series::IntoSeries;
 use polars::{error::PolarsResult, series::Series};
 use regex::Regex;
-
-use crate::jdd::schema::Jdd;
+use std::borrow::Cow;
 
 use super::utils::strip_accent;
 
@@ -80,8 +80,8 @@ pub fn transform_col_nom(series: &Series) -> PolarsResult<Option<Series>> {
     transform_string_series(series, transform_nom)
 }
 
-pub fn col_nom_with_polars_expr() -> Expr {
-    col(Jdd::Nom.as_str())
+fn transform_col_nom_expr(col_nom: &str) -> Expr {
+    col(col_nom)
         .str()
         .replace_all(lit(r"^\s+|\s+$"), lit(""), false) // Trim spaces
         .map(
@@ -110,7 +110,14 @@ pub fn col_nom_with_polars_expr() -> Expr {
         .replace_all(lit(r"\-+"), lit(" "), false) // Replace multiple hyphens with a single space
         .str()
         .replace_all(lit(r"\s+"), lit(" "), false) // Replace multiple spaces with a single space
-        .alias(Jdd::Nom.as_str()) // Alias the output column name
+        .alias(col_nom) // Alias the output column name
+}
+
+pub fn col_nom_with_polars_expr(se: SchemasEnum) -> Expr {
+    match se {
+        SchemasEnum::Jdd => transform_col_nom_expr(Jdd::Nom.as_str()),
+        SchemasEnum::Hdd => transform_col_nom_expr(Hdd::Nom.as_str()),
+    }
 }
 
 #[cfg(test)]
@@ -171,7 +178,7 @@ mod tests {
         let result_df = df
             .clone()
             .lazy()
-            .select(&[col_nom_with_polars_expr()])
+            .select(&[col_nom_with_polars_expr(SchemasEnum::Jdd)])
             .collect()
             .expect("DataFrame collection failed");
 
