@@ -1,7 +1,8 @@
 use artemis_rs::jdd::config::Transform;
 use artemis_rs::jdd::schema::Jdd;
 use artemis_rs::jdd::transforms::{
-    col_email_with_polars_expr, col_raison_sociale_with_polars_expr, col_with_udf_expr,
+    col_with_udf_expr, email::col_email_with_polars_expr,
+    raison_sociale::col_raison_sociale_with_polars_expr,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use polars::prelude::*;

@@ -2,10 +2,11 @@ use artemis_rs::config::FILES_PATH;
 use artemis_rs::jdd::config::Transform;
 use artemis_rs::jdd::schema::{Jdd, JddSchema};
 use artemis_rs::jdd::transforms::{
-    col_ape_with_polars_expr, col_code_naf_with_polars_expr, col_email_with_polars_expr,
-    col_libelle_naf_with_polars_expr, col_nom_with_polars_expr, col_prenom_with_polars_expr,
-    col_raison_sociale_with_polars_expr, col_siren_with_polars_expr, col_siret_with_polars_expr,
-    col_with_udf_expr,
+    ape::col_ape_with_polars_expr, code_naf::col_code_naf_with_polars_expr, col_with_udf_expr,
+    email::col_email_with_polars_expr, libelle_naf::col_libelle_naf_with_polars_expr,
+    nom::col_nom_with_polars_expr, prenom::col_prenom_with_polars_expr,
+    raison_sociale::col_raison_sociale_with_polars_expr, siren::col_siren_with_polars_expr,
+    siret::col_siret_with_polars_expr,
 };
 use dotenv::dotenv;
 use log::info;
