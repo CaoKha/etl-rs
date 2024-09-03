@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     save_kafka_messages_to_mongo(
         &mongo_client,
-        &config.mongo,
+        &config.mongo.jdd,
         &messages,
         WriteMode::Overwrite,
     )
@@ -133,7 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!(
         "Messages saved successfully to MongoDB at \"{}.{}\"",
-        &config.mongo.database, &config.mongo.collection
+        &config.mongo.jdd.database, &config.mongo.jdd.collection
     );
 
     Ok(())

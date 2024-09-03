@@ -31,8 +31,8 @@ example-transform-jdd-normalisation:
 example-transform-hdd-deduplication:
 	cargo run --example transform_hdd_deduplication
 
-example-csv-to-kafka:
-	cargo run --example csv_to_kafka
+example-csv-jdd-to-kafka:
+	cargo run --example csv_jdd_to_kafka
 
-example-kafka-to-mongo:
-	cargo run --example kafka_to_mongo
+example-kafka-jdd-to-mongo:
+	cargo run --example kafka_jdd_to_mongo

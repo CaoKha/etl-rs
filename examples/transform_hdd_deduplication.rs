@@ -9,65 +9,208 @@ use artemis_rs::transforms::prenom::col_prenom_with_polars_expr;
 use artemis_rs::transforms::raison_sociale::col_raison_sociale_with_polars_expr;
 use artemis_rs::transforms::siret::col_siret_with_polars_expr;
 use artemis_rs::transforms::siret_successeur::col_siret_ss_with_polars_expr;
+use artemis_rs::transforms::utils::struct_to_dataframe;
 use log::info;
-use polars::lazy::dsl::col;
+use polars::lazy::dsl::{col, concat_list, lit};
 use polars::prelude::*;
 use sea_query::{ColumnRef, PostgresQueryBuilder, Query};
-use serde::Serialize;
-use serde_json::Value;
 use sqlx::PgPool;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 
-fn struct_to_dataframe<T>(input: &[T]) -> DataFrame
-where
-    T: Serialize,
-{
-    // Serialize structs to a vector of maps
-    let mut vec_of_maps = Vec::new();
-    for e in input.iter() {
-        let json_value = serde_json::to_value(e).unwrap();
-        if let Value::Object(map) = json_value {
-            vec_of_maps.push(map);
-        }
-    }
+fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
+    let mut original_lf = lf.clone();
+    // Self join dataframe to find duplications
+    let mut lf = lf
+        .clone()
+        .cross_join(lf, Some(String::from("_right")))
+        .filter(
+            col(Hdd::Id.as_str())
+                .lt(col(format!("{}_{}", Hdd::Id.as_str(), "right").as_str())) // use
+                // less than to remove combinations with the same Id element but with different
+                // order
+                .and(
+                    col(Hdd::Nom.as_str())
+                        .eq(col(format!("{}_{}", Hdd::Nom.as_str(), "right").as_str())),
+                )
+                .and(col(Hdd::Prenom.as_str()).eq(col(
+                    format!("{}_{}", Hdd::Prenom.as_str(), "right").as_str(),
+                )))
+                .and(
+                    col(Hdd::Pce.as_str())
+                        .eq(col(format!("{}_{}", Hdd::Pce.as_str(), "right").as_str()))
+                        .or(col(Hdd::Email.as_str()).eq(col(format!(
+                            "{}_{}",
+                            Hdd::Email.as_str(),
+                            "right"
+                        )
+                        .as_str())))
+                        .or(col(Hdd::Telephone.as_str()).eq(col(format!(
+                            "{}_{}",
+                            Hdd::Telephone.as_str(),
+                            "right"
+                        )
+                        .as_str()))),
+                ),
+        )
+        .select([
+            col(Hdd::Nom.as_str()),
+            col(Hdd::Prenom.as_str()),
+            col(Hdd::Id.as_str()),
+            concat_list([
+                col(Hdd::Id.as_str()),
+                col(format!("{}_{}", Hdd::Id.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Ids.as_str()),
+            concat_list([
+                col(Hdd::Pce.as_str()),
+                col(format!("{}_{}", Hdd::Pce.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Pce.as_str()),
+            concat_list([
+                col(Hdd::IdSource.as_str()),
+                col(format!("{}_{}", Hdd::IdSource.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::IdSource.as_str()),
+            concat_list([
+                col(Hdd::Telephone.as_str()),
+                col(format!("{}_{}", Hdd::Telephone.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Telephone.as_str()),
+            concat_list([
+                col(Hdd::Email.as_str()),
+                col(format!("{}_{}", Hdd::Email.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Email.as_str()),
+            concat_list([
+                col(Hdd::Siret.as_str()),
+                col(format!("{}_{}", Hdd::Siret.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Siret.as_str()),
+            concat_list([
+                col(Hdd::SiretSuccesseur.as_str()),
+                col(format!("{}_{}", Hdd::SiretSuccesseur.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::SiretSuccesseur.as_str()),
+            concat_list([
+                col(Hdd::RaisonSociale.as_str()),
+                col(format!("{}_{}", Hdd::RaisonSociale.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::RaisonSociale.as_str()),
+        ]);
 
-    // Initialize column vectors
-    let mut columns: HashMap<String, Vec<Option<String>>> = HashMap::new();
+    // Grouping by Hdd::Id to find deduplicates
+    lf = lf
+        .group_by([Hdd::Id.as_str(), Hdd::Nom.as_str(), Hdd::Prenom.as_str()])
+        .agg([
+            col(Hdd::Pce.as_str()).flatten().alias(Hdd::Pce.as_str()),
+            col(Hdd::Email.as_str())
+                .flatten()
+                .alias(Hdd::Email.as_str()),
+            col(Hdd::Telephone.as_str())
+                .flatten()
+                .alias(Hdd::Telephone.as_str()),
+            col(Hdd::Ids.as_str()).flatten().alias(Hdd::Ids.as_str()),
+            col(Hdd::Siret.as_str())
+                .flatten()
+                .alias(Hdd::Siret.as_str()),
+            col(Hdd::SiretSuccesseur.as_str())
+                .flatten()
+                .alias(Hdd::SiretSuccesseur.as_str()),
+            col(Hdd::RaisonSociale.as_str())
+                .flatten()
+                .alias(Hdd::RaisonSociale.as_str()),
+            col(Hdd::IdSource.as_str())
+                .flatten()
+                .alias(Hdd::IdSource.as_str()),
+        ]);
 
-    // Populate columns from the vector of maps
-    for map in vec_of_maps.iter() {
-        for (key, value) in map.iter() {
-            let column = columns.entry(key.clone()).or_default();
-            match value {
-                Value::String(s) => column.push(Some(s.clone())),
-                Value::Null => column.push(None),
-                Value::Number(s) => {
-                    if let Some(num) = s.as_f64() {
-                        let num_i32: i64 = num as i64;
-                        column.push(Some(num_i32.to_string().clone()))
-                    } else {
-                        column.push(Some(s.to_string().clone()))
-                    }
-                }
-                _ => unreachable!(), // assuming all fields are Option<String>
-            }
-        }
-    }
+    // Remove any rows that have the same set JDD::UIDS or is a subset of another set of JDD::UIDS
+    let lf_subsets = lf
+        .clone()
+        .cross_join(lf.clone(), Some(String::from("_right")))
+        .filter(
+            col(Hdd::Ids.as_str())
+                .list()
+                .set_difference(col(format!("{}_{}", Hdd::Ids.as_str(), "right").as_str()))
+                .len()
+                .eq(0),
+        )
+        .select([
+            col(Hdd::Id.as_str()),
+            col(Hdd::Nom.as_str()),
+            col(Hdd::Prenom.as_str()),
+            col(Hdd::Pce.as_str()),
+            col(Hdd::Email.as_str()),
+            col(Hdd::Telephone.as_str()),
+            col(Hdd::Ids.as_str()),
+            col(Hdd::Siret.as_str()),
+            col(Hdd::SiretSuccesseur.as_str()),
+            col(Hdd::RaisonSociale.as_str()),
+            col(Hdd::IdSource.as_str()),
+        ]);
 
-    // Create DataFrame
-    let mut df = DataFrame::default();
-    for (key, values) in columns.into_iter() {
-        let series = Series::new(&key, values);
-        df.with_column(series).unwrap();
-    }
-    df
+    lf = lf
+        .join(
+            lf_subsets,
+            [col(Hdd::Id.as_str())],
+            [col(Hdd::Id.as_str())],
+            JoinArgs::new(JoinType::Anti),
+        )
+        .select([
+            col(Hdd::Id.as_str()),
+            col(Hdd::Nom.as_str()),
+            col(Hdd::Prenom.as_str()),
+            col(Hdd::Pce.as_str()),
+            col(Hdd::Email.as_str()),
+            col(Hdd::Telephone.as_str()),
+            col(Hdd::Ids.as_str()),
+            col(Hdd::Siret.as_str()),
+            col(Hdd::SiretSuccesseur.as_str()),
+            col(Hdd::RaisonSociale.as_str()),
+            col(Hdd::IdSource.as_str()),
+        ]);
+
+    let ids_to_remove = lf
+        .clone()
+        .select([col(Hdd::Ids.as_str()).flatten().unique()])
+        .collect()?
+        .column(Hdd::Ids.as_str())?
+        .str()?
+        .into_iter()
+        .filter_map(|opt_id| opt_id.map(|id| id.to_string()))
+        .collect::<Vec<_>>();
+
+    println!("Id to remove: {:#?}", ids_to_remove);
+
+    let ids_to_remove_series = Series::new("ids_to_remove", ids_to_remove);
+
+    original_lf = original_lf.filter(col(Hdd::Id.as_str()).is_in(lit(ids_to_remove_series)));
+
+    println!("LF after removed : {:#?}", original_lf.clone().collect());
+
+    Ok(original_lf)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
-
     // Initialize PostgreSQL connection pool
     let postgres_url = env::var("POSTGRES_URL").expect("POSTGRES_URI must be set");
     info!("Database URL: {}", postgres_url);
@@ -80,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_owned()
         .to_string(PostgresQueryBuilder);
     let rows: Vec<HddSchema> = sqlx::query_as(&sql).fetch_all(&pool).await?;
-    let df = struct_to_dataframe(&rows);
+    let mut df = struct_to_dataframe(&rows);
 
     let lf = df.lazy().with_columns(vec![
         col_pce_with_polars_expr(SchemasEnum::Hdd),
@@ -92,9 +235,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         col_siret_with_polars_expr(SchemasEnum::Hdd),
         col_siret_ss_with_polars_expr(SchemasEnum::Hdd),
         col(Hdd::IdSource.as_str()),
+        col(Hdd::Id.as_str()),
     ]);
 
-    let mut df = lf.collect()?;
+    df = transform_deduplication(lf)?
+        .select(&[
+            col(Hdd::Nom.as_str()),
+            col(Hdd::Prenom.as_str()),
+            col(Hdd::Id.as_str()),
+            col(Hdd::Ids.as_str()).list().join(lit("/"), true),
+        ])
+        .collect()?;
+    println!("Deduplication: {:#?}", df);
 
     let mut csv_file =
         std::fs::File::create(String::from(FILES_PATH) + "HDD_deduplication_transformed.csv")?;

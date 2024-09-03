@@ -19,12 +19,16 @@ sqlx = { version = "0.8", features = [
   "runtime-tokio-native-tls",
   "macros",
 ] }
-polars = { version = "0.41.3", features = [
+polars = { version = "0.42", features = [
   "lazy",
   "rows",
   "strings",
   "regex",
   "concat_str",
+  "cross_join",
+  "list_sets",
+  "semi_anti_join",
+  "is_in"
 ] }
 sea-query = "0.31"
 sea-query-binder = { version = "0.6.0", features = ["sqlx-postgres"] }
@@ -39,16 +43,16 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 
 
 [[example]]
-name = "csv_to_kafka"
-path = "examples/csv_to_kafka.rs"
+name = "csv_jdd_to_kafka"
+path = "examples/csv_jdd_to_kafka.rs"
 
 [[example]]
 name = "simple_kafka_consumer"
 path = "examples/simple_kafka_consumer.rs"
 
 [[example]]
-name = "kafka_to_mongo"
-path = "examples/kafka_to_mongo.rs"
+name = "kafka_jdd_to_mongo"
+path = "examples/kafka_jdd_to_mongo.rs"
 
 [[example]]
 name = "csv_jdd_to_postgres"
@@ -57,6 +61,10 @@ path = "examples/csv_jdd_to_postgres.rs"
 [[example]]
 name = "transform_jdd_normalisation"
 path = "examples/transform_jdd_normalisation.rs"
+
+[[example]]
+name = "transform_hdd_deduplication"
+path = "examples/transform_hdd_deduplication.rs"
 
 [[bench]]
 name = "transform_benchmark"

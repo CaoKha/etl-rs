@@ -16,7 +16,13 @@
     }
   },
   "mongo": {
-    "database": "raw",
-    "collection": "jdd"
+    "jdd": {
+      "database": "raw",
+      "collection": "jdd"
+    },
+    "hdd": {
+      "database": "raw",
+      "collection": "hdd"
+    }
   }
 }

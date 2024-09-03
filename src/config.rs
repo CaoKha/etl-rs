@@ -36,6 +36,12 @@ pub struct MongoConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct MongoListConfig {
+    pub jdd: MongoConfig,
+    pub hdd: MongoConfig,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct CsvListConfig {
     pub jdd: CsvConfig,
     pub hdd: CsvConfig,
@@ -45,7 +51,7 @@ pub struct CsvListConfig {
 pub struct Config {
     pub kafka: KafkaConfig,
     pub csv: CsvListConfig,
-    pub mongo: MongoConfig,
+    pub mongo: MongoListConfig,
 }
 
 impl Config {

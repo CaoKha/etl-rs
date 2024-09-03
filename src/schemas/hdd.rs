@@ -14,6 +14,7 @@ pub enum Hdd {
     Prenom,
     Telephone,
     Email,
+    Ids,
 }
 
 impl AsString for Hdd {
@@ -30,6 +31,7 @@ impl AsString for Hdd {
             Hdd::Prenom => "Prenom",
             Hdd::Telephone => "Telephone",
             Hdd::Email => "Email",
+            Hdd::Ids => "IDS",
         }
     }
 }
@@ -60,5 +62,8 @@ pub struct HddSchema {
     pub id_source: Option<i32>,
 
     #[serde(rename = "PCE")]
-    pub pce: Option<f64>
+    pub pce: Option<f64>,
+
+    #[serde(rename = "ID")]
+    pub id: i32,
 }

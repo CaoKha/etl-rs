@@ -204,6 +204,24 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'transform_hdd_deduplication'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=transform_hdd_deduplication",
+                    "--package=artemis_rs"
+                ],
+                "filter": {
+                    "name": "transform_hdd_deduplication",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
