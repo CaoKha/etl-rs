@@ -4,3 +4,4 @@
 /kafka-data
 .env
 .cargo
+Cargo.lock
