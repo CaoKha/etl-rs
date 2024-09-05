@@ -1,3 +1,14 @@
 [workspace]
-members = ["crates/libs/lib-data-processing"]
+members = [
+  "crates/libs/lib-data-processing",
+  "crates/libs/lib-utils",
+  "crates/libs/lib-auth",
+]
 resolver = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+time = { version = "0.3", features = ["formatting", "parsing", "serde"] }
+derive_more = {version = "1.0.0-beta", features = ["from", "display"] }
