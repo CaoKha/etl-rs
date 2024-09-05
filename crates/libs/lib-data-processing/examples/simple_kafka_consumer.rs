@@ -1,4 +1,4 @@
-use artemis_rs::kafka::create_kafka_stream_consumer;
+use lib_data_processing::kafka::create_kafka_stream_consumer;
 use clap::{Arg, Command};
 use log::{info, warn};
 

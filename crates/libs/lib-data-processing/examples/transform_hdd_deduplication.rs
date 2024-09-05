@@ -1,15 +1,15 @@
-use artemis_rs::config::{Transform, FILES_PATH};
-use artemis_rs::schemas::hdd::{Hdd, HddSchema};
-use artemis_rs::schemas::{AsString, SchemasEnum};
-use artemis_rs::transforms::col_with_udf_expr;
-use artemis_rs::transforms::email::col_email_with_polars_expr;
-use artemis_rs::transforms::nom::col_nom_with_polars_expr;
-use artemis_rs::transforms::pce::col_pce_with_polars_expr;
-use artemis_rs::transforms::prenom::col_prenom_with_polars_expr;
-use artemis_rs::transforms::raison_sociale::col_raison_sociale_with_polars_expr;
-use artemis_rs::transforms::siret::col_siret_with_polars_expr;
-use artemis_rs::transforms::siret_successeur::col_siret_ss_with_polars_expr;
-use artemis_rs::transforms::utils::struct_to_dataframe;
+use lib_data_processing::config::{Transform, FILES_PATH};
+use lib_data_processing::schemas::hdd::{Hdd, HddSchema};
+use lib_data_processing::schemas::{AsString, SchemasEnum};
+use lib_data_processing::transforms::col_with_udf_expr;
+use lib_data_processing::transforms::email::col_email_with_polars_expr;
+use lib_data_processing::transforms::nom::col_nom_with_polars_expr;
+use lib_data_processing::transforms::pce::col_pce_with_polars_expr;
+use lib_data_processing::transforms::prenom::col_prenom_with_polars_expr;
+use lib_data_processing::transforms::raison_sociale::col_raison_sociale_with_polars_expr;
+use lib_data_processing::transforms::siret::col_siret_with_polars_expr;
+use lib_data_processing::transforms::siret_successeur::col_siret_ss_with_polars_expr;
+use lib_data_processing::transforms::utils::struct_to_dataframe;
 use log::info;
 use polars::lazy::dsl::{col, concat_list, lit};
 use polars::prelude::*;
@@ -127,14 +127,7 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
 
     println!(
         "lf_deduplicating stage 1: {:#?}",
-        lf_deduplicating
-            .clone()
-            .select([
-                col(Hdd::Nom.as_str()),
-                col(Hdd::Prenom.as_str()),
-                col(Hdd::Ids.as_str())
-            ])
-            .collect()
+        lf_deduplicating.clone().collect()
     );
 
     // Grouping by Hdd::Id to find deduplicates
@@ -248,7 +241,7 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
         .filter_map(|opt_id| opt_id.map(|id| id.to_string()))
         .collect::<Vec<String>>();
 
-    println!("Id to remove: {:#?}", vec_ids_to_remove);
+    println!("Ids to remove: {:#?}", vec_ids_to_remove);
 
     let series_ids_to_remove = Series::new("ids_to_remove", vec_ids_to_remove);
 

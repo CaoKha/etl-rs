@@ -1,0 +1,46 @@
+[package]
+name = "lib-data-processing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.38", features = ["rt-multi-thread", "sync", "macros"] }
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+serde_json = "1.0"
+serde = "1.0"
+log = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+notify = "6.1"
+csv = "1.3"
+env_logger = "0.11"
+mongodb = "3"
+sqlx = { version = "0.8", features = [
+  "postgres",
+  "runtime-tokio-native-tls",
+  "macros",
+] }
+polars = { version = "0.42", features = [
+  "lazy",
+  "rows",
+  "strings",
+  "regex",
+  "concat_str",
+  "cross_join",
+  "list_sets",
+  "semi_anti_join",
+  "is_in",
+] }
+sea-query = "0.31"
+sea-query-binder = { version = "0.6.0", features = ["sqlx-postgres"] }
+regex = "1.10"
+lazy_static = "1.5"
+unidecode = "0.3"
+
+[dev-dependencies]
+clap = "4.5"
+dotenv = "0.15"                                                # or the latest version
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "transform_benchmark"
+harness = false

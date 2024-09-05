@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
-pub const IO_CONFIG_PATH: &str = "configs/io-config.json";
-pub const FILES_PATH: &str = "files/";
+pub const IO_CONFIG_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/configs/io-config.json");
+pub const FILES_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/files/");
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KafkaMessage {

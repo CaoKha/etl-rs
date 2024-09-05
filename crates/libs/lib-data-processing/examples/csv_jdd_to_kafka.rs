@@ -1,6 +1,6 @@
-use artemis_rs::config::{Config, IO_CONFIG_PATH};
-use artemis_rs::csv_processor::csv_to_json;
-use artemis_rs::kafka::push_json_to_kafka;
+use lib_data_processing::config::{Config, IO_CONFIG_PATH};
+use lib_data_processing::csv_processor::csv_to_json;
+use lib_data_processing::kafka::push_json_to_kafka;
 use log::{error, info};
 
 #[tokio::main]

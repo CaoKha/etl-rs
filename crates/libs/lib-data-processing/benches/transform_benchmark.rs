@@ -1,7 +1,7 @@
-use artemis_rs::config::Transform;
-use artemis_rs::schemas::jdd::Jdd;
-use artemis_rs::schemas::AsString;
-use artemis_rs::transforms::{
+use lib_data_processing::config::Transform;
+use lib_data_processing::schemas::jdd::Jdd;
+use lib_data_processing::schemas::AsString;
+use lib_data_processing::transforms::{
     col_with_udf_expr, email::col_email_with_polars_expr,
     raison_sociale::col_raison_sociale_with_polars_expr,
 };
@@ -59,8 +59,8 @@ fn benchmark_polars_expr_vs_udf(c: &mut Criterion) {
     c.bench_function("Polars Expression", |b| {
         b.iter(|| {
             let lf = df.clone().lazy().with_columns(vec![
-                col_email_with_polars_expr(artemis_rs::schemas::SchemasEnum::Jdd),
-                col_raison_sociale_with_polars_expr(artemis_rs::schemas::SchemasEnum::Jdd),
+                col_email_with_polars_expr(lib_data_processing::schemas::SchemasEnum::Jdd),
+                col_raison_sociale_with_polars_expr(lib_data_processing::schemas::SchemasEnum::Jdd),
             ]);
             let _ = lf.collect().expect("Failed to collect DataFrame");
         });

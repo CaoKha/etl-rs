@@ -1,7 +1,7 @@
 use std::env;
 
-use artemis_rs::config::{Config, KafkaMessage, MongoConfig, IO_CONFIG_PATH};
-use artemis_rs::kafka::create_kafka_base_consumer;
+use lib_data_processing::config::{Config, KafkaMessage, MongoConfig, IO_CONFIG_PATH};
+use lib_data_processing::kafka::create_kafka_base_consumer;
 use log::{debug, error, info, warn};
 use mongodb::{bson, Client};
 use rdkafka::consumer::{BaseConsumer, Consumer};
