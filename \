@@ -1,0 +1,14 @@
+use serde::Serialize;
+
+pub type Result<T> = core::result::Result<T, Error>;
+
+#[derive(Debug, Serialize)]
+pub enum Error {
+	HmacFailFromSlice,
+	InvalidFormat,
+	CannotDecodeIdent,
+	CannotDecodeExp,
+	SignatureNotMatching,
+	ExpNotIso,
+	Expired,
+}

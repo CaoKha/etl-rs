@@ -20,7 +20,7 @@ pub fn parse_utc(moment: &str) -> Result<OffsetDateTime> {
 }
 
 // region:    --- Error
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
@@ -28,11 +28,11 @@ pub enum Error {
 }
 
 // region:    --- Error Boilerplate
-impl core::fmt::Display for Error {
+impl std::fmt::Display for Error {
 	fn fmt(
 		&self,
-		fmt: &mut core::fmt::Formatter,
-	) -> core::result::Result<(), core::fmt::Error> {
+		fmt: &mut std::fmt::Formatter,
+	) -> std::result::Result<(), std::fmt::Error> {
 		write!(fmt, "{self:?}")
 	}
 }
