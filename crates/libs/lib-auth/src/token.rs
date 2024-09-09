@@ -1,11 +1,16 @@
 mod error;
 use std::{fmt::Display, str::FromStr};
 
+use crate::config::auth_config;
+
 pub use self::error::{Error, Result};
 
 // use crate::config::auth_config;
 use hmac::{Hmac, Mac};
-use lib_utils::b64::{b64u_decode_to_string, b64u_encode};
+use lib_utils::{
+	b64::{b64u_decode_to_string, b64u_encode},
+	time::{now_utc, now_utc_plus_sec_str, parse_utc},
+};
 use sha2::Sha512;
 use uuid::Uuid;
 
@@ -56,30 +61,64 @@ impl Display for Token {
 
 // region: --- Web Token Gen and Validation
 
-// pub fn gen_web_token(user: &str, salt: Uuid) -> Result<Token> {
-//     let config = &auth_config();
-// }
+pub fn gen_web_token(user: &str, salt: Uuid) -> Result<Token> {
+	let config = auth_config();
+	_generate_token(user, config.TOKEN_DURATION_SEC, salt, &config.TOKEN_KEY)
+}
 
-// fn _generate_token(
-//     ident: &str,
-//     duration_sec: f64,
-//     salt: Uuid,
-//     key: &[u8],
-// ) -> Result<Token> {
-//     // Compute the two first components
-//     let ident = ident.to_string();
-//     let exp = now_utc_plus_sec_str(duration_sec);
-//
-//     // Sign the two first components
-// }
+pub fn validate_web_token(origin_token: &Token, salt: Uuid) -> Result<()> {
+	let config = auth_config();
+	_validate_token_sign_and_expire(origin_token, salt, &config.TOKEN_KEY)?;
+	Ok(())
+}
+
+fn _generate_token(
+	ident: &str,
+	duration_sec: f64,
+	salt: Uuid,
+	key: &[u8],
+) -> Result<Token> {
+	// Compute the two first components
+	let ident = ident.to_string();
+	let expire = now_utc_plus_sec_str(duration_sec);
+	// Sign the two first components
+	let sign_b64u = _token_sign_into_b64u(&ident, &expire, salt, key)?;
+	Ok(Token {
+		ident,
+		expire,
+		sign_b64u,
+	})
+}
+
+fn _validate_token_sign_and_expire(
+	origin_token: &Token,
+	salt: Uuid,
+	key: &[u8],
+) -> Result<()> {
+	let new_sign_b64u =
+		_token_sign_into_b64u(&origin_token.ident, &origin_token.expire, salt, key)?;
+	if new_sign_b64u != origin_token.sign_b64u {
+		return Err(Error::SignatureNotMatching);
+	}
+
+	// Validate expiration
+	let origin_expire =
+		parse_utc(&origin_token.expire).map_err(|_| Error::ExpireNotIso)?;
+	let now = now_utc();
+	if origin_expire < now {
+		return Err(Error::Expired);
+	}
+
+	Ok(())
+}
 
 fn _token_sign_into_b64u(
 	ident: &str,
-	exp: &str,
+	expire: &str,
 	salt: Uuid,
 	key: &[u8],
 ) -> Result<String> {
-	let content = format!("{}.{}", b64u_encode(ident), b64u_encode(exp));
+	let content = format!("{}.{}", b64u_encode(ident), b64u_encode(expire));
 	// Create a HMAC-SHA-512 from key
 	let mut hmac_sha512 =
 		Hmac::<Sha512>::new_from_slice(key).map_err(|_| Error::HmacFailFromSlice)?;

@@ -9,7 +9,7 @@ pub enum Error {
 	CannotDecodeIdent,
 	CannotDecodeExpire,
 	SignatureNotMatching,
-	ExpNotIso,
+	ExpireNotIso,
 	Expired,
 }
 

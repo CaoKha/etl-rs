@@ -1,6 +1,7 @@
 use lib_utils::envs::{get_env_b64u_as_u8s, get_env_parse};
 use std::sync::OnceLock;
 
+// Singleton pattern
 pub fn auth_config() -> &'static AuthConfig {
 	static INSTANCE: OnceLock<AuthConfig> = OnceLock::new();
 
