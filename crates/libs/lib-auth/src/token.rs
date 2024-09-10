@@ -4,7 +4,6 @@ use std::{fmt::Display, str::FromStr};
 use crate::config::auth_config;
 
 pub use self::error::{Error, Result};
-
 // use crate::config::auth_config;
 use hmac::{Hmac, Mac};
 use lib_utils::{
