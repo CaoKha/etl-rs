@@ -115,7 +115,7 @@ where
     // Create DataFrame
     let mut df = DataFrame::default();
     for (key, values) in columns.into_iter() {
-        let series = Series::new(&key, values);
+        let series = Series::new(key.into(), values);
         df.with_column(series).unwrap();
     }
     df
