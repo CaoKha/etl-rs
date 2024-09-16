@@ -1,6 +1,6 @@
 use lib_data_processing::{
-    config::{Config, IO_CONFIG_PATH},
-    schemas::hdd::{Hdd, HddSchema},
+    config::{Config, FILES_PATH, IO_CONFIG_PATH},
+    schemas::hdd::{Hdd, HddSchemaCSV},
 };
 use log::{debug, error, info};
 use sea_query::{ColumnDef, PostgresQueryBuilder, Table};
@@ -20,12 +20,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Configuration loaded successfully");
 
+    println!("{:?}", &config.csv.hdd.file_path);
+
     let mut csv_reader = csv::ReaderBuilder::new()
         .delimiter(b';')
         .has_headers(true)
         .comment(Some(b'#'))
-        .from_path(&config.csv.hdd.file_path)
+        .from_path(FILES_PATH.to_string() + &config.csv.hdd.file_path)
         .expect("Failed to read CSV file");
+
 
     info!("CSV file loaded successfully");
 
@@ -37,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     create_table(&pool).await?;
 
-    while let Some(result) = csv_reader.deserialize::<HddSchema>().next() {
+    while let Some(result) = csv_reader.deserialize::<HddSchemaCSV>().next() {
         let record = result?;
 
         let insert_query = sea_query::Query::insert()

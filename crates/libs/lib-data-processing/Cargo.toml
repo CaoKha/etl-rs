@@ -3,6 +3,10 @@ name = "lib-data-processing"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "lib_data_processing"
+crate-type = ["cdylib", "lib"]
+
 [dependencies]
 tokio = { version = "1.38", features = ["rt-multi-thread", "sync", "macros"] }
 rdkafka = { version = "0.36", features = ["cmake-build"] }
