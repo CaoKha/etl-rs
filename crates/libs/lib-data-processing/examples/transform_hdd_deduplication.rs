@@ -11,16 +11,15 @@ use lib_data_processing::transforms::siret::col_siret_with_polars_expr;
 use lib_data_processing::transforms::siret_successeur::col_siret_ss_with_polars_expr;
 use lib_data_processing::transforms::utils::struct_to_dataframe;
 use log::info;
-use polars::lazy::dsl::{col, concat_list, lit, GetOutput};
+use polars::lazy::dsl::{col, concat_list, lit, Expr};
 use polars::prelude::*;
-use polars_ops::series::RankOptions;
+use rayon::prelude::*;
 use sea_query::{ColumnRef, PostgresQueryBuilder, Query};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::env;
 
-fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
-    let lf_original = lf.clone();
+fn detect_duplicates(lf: LazyFrame) -> PolarsResult<(LazyFrame, Vec<String>)> {
     // Self join dataframe to find duplications
     let mut lf_deduplicating =
         lf.clone()
@@ -136,11 +135,6 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
                 .alias(Hdd::RaisonSociale.as_str()),
             ]);
 
-    // println!(
-    // 	"lf_deduplicating stage 1: {:#?}",
-    // 	lf_deduplicating.clone().collect()
-    // );
-
     // Grouping by Hdd::Id to find deduplicates
     lf_deduplicating = lf_deduplicating
         .group_by([Hdd::Id.as_str(), Hdd::Nom.as_str(), Hdd::Prenom.as_str()])
@@ -176,11 +170,6 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
                 .alias(Hdd::IdSource.as_str()),
         ]);
 
-    // println!(
-    // 	"lf_deduplicating stage 2: {:#?}",
-    // 	lf_deduplicating.clone().collect()
-    // );
-
     // Get any rows that have the same set JDD::UIDS or is a subset of another set of JDD::UIDS
     let lf_deduplicating_subsets = lf_deduplicating
         .clone()
@@ -215,11 +204,6 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
             col(Hdd::RaisonSociale.as_str()),
             col(Hdd::IdSource.as_str()),
         ]);
-
-    // println!(
-    // 	"lf_deduplicating_subsets: {:#?}",
-    // 	lf_deduplicating_subsets.clone().collect()
-    // );
 
     // Remove those rows that have the same set JDD::UIDS or is a subset of another set of JDD::UIDS from lf_self_joined
     lf_deduplicating = lf_deduplicating.join(
@@ -257,8 +241,15 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
         .filter_map(|opt_id| opt_id.map(|id| id.to_string()))
         .collect::<Vec<String>>();
 
-    // println!("Ids to remove: {:#?}", vec_ids_to_remove);
+    Ok((lf_rows_to_add, vec_ids_to_remove))
+}
 
+fn reconciliate_lf(
+    lf_original: LazyFrame,
+    lf_rows_to_add: LazyFrame,
+    vec_ids_to_remove: Vec<String>,
+    exprs_columns_to_select: &[Expr],
+) -> PolarsResult<LazyFrame> {
     let series_ids_to_remove =
         Series::new("ids_to_remove".into(), vec_ids_to_remove);
 
@@ -275,29 +266,9 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
             JoinArgs::new(JoinType::Anti),
         );
 
-    // println!(
-    // 	"lf_original_with_removed_rows: {:#?}",
-    // 	lf_original_with_removed_rows.clone().collect()
-    // );
-    //
-    // println!("lf_rows_to_add: {:#?}", lf_rows_to_add.clone().collect());
-
-    let exprs_columns_to_select = [
-        col(Hdd::Id.as_str()),
-        col(Hdd::Nom.as_str()),
-        col(Hdd::Prenom.as_str()),
-        col(Hdd::Pce.as_str()),
-        col(Hdd::Email.as_str()),
-        col(Hdd::Telephone.as_str()),
-        col(Hdd::Ids.as_str()),
-        col(Hdd::Siret.as_str()),
-        col(Hdd::SiretSuccesseur.as_str()),
-        col(Hdd::RaisonSociale.as_str()),
-        col(Hdd::IdSource.as_str()),
-    ];
     let lf_final = concat(
         [
-            lf_original_with_removed_rows.select(exprs_columns_to_select.clone()),
+            lf_original_with_removed_rows.select(exprs_columns_to_select),
             lf_rows_to_add.select(exprs_columns_to_select),
         ],
         UnionArgs::default(),
@@ -306,38 +277,38 @@ fn transform_deduplication(lf: LazyFrame) -> PolarsResult<LazyFrame> {
     Ok(lf_final)
 }
 
-fn transform_deduplication_optimize(lf: LazyFrame) -> PolarsResult<LazyFrame> {
+fn filter_duplicates(lf: LazyFrame) -> PolarsResult<LazyFrame> {
     let lf_deduplicating = lf
         .sort(
             [Hdd::Nom.as_str()],
             SortMultipleOptions::default().with_nulls_last(true),
         )
-        .with_columns(vec![
+        .with_column(
             col(Hdd::Nom.as_str())
                 .count()
                 .over([Hdd::Nom.as_str()])
                 .alias("partition_size"),
-            col(Hdd::Id.as_str())
-                .rank(RankOptions::default(), None)
-                .over([Hdd::Nom.as_str()])
-                .alias("row_index"),
-        ])
+        )
         .filter(col("partition_size").gt(lit(1)));
 
     Ok(lf_deduplicating)
 }
 
 // WIP
-fn partition_by_name(lf: LazyFrame) -> PolarsResult<HashMap<String, LazyFrame>> {
+fn hash_partition(
+    lf: LazyFrame,
+    based_on_col: &str,
+    exprs_columns_to_select: &[Expr],
+) -> PolarsResult<HashMap<String, LazyFrame>> {
     let unique_names = lf
         .clone()
-        .select([col(Hdd::Nom.as_str())])
+        .select([col(based_on_col)])
         .unique(None, UniqueKeepStrategy::First)
         .collect()?
-        .column(Hdd::Nom.as_str())?
+        .column(based_on_col)?
         .str()?
         .into_iter()
-        .filter_map(|opt_name| opt_name.map(|name| name.to_string()))
+        .filter_map(|opt_text| opt_text.map(|text| text.to_string()))
         .collect::<Vec<_>>();
     let mut frames_map = HashMap::new();
     let mut frames_map_df = HashMap::new();
@@ -345,11 +316,52 @@ fn partition_by_name(lf: LazyFrame) -> PolarsResult<HashMap<String, LazyFrame>> 
         let filtered_lf = lf
             .clone()
             .filter(col(Hdd::Nom.as_str()).eq(lit(name.clone())));
-        frames_map.insert(name.clone(), filtered_lf.clone());
-        frames_map_df.insert(name, filtered_lf.collect()?);
+        frames_map.insert(
+            name.clone(),
+            filtered_lf.clone().select(exprs_columns_to_select),
+        );
+        frames_map_df
+            .insert(name, filtered_lf.select(exprs_columns_to_select).collect()?);
     }
     println!("frames_map: {:#?}", frames_map_df);
     Ok(frames_map)
+}
+
+fn get_hashmap_duplicates(
+    data_map: HashMap<String, LazyFrame>,
+) -> PolarsResult<HashMap<String, (LazyFrame, Vec<String>)>> {
+    data_map
+        .into_par_iter()
+        .map(|(key, lf)| {
+            let (lf_rows_to_add, vec_ids_to_remove) = detect_duplicates(lf)?;
+            let df_rows_to_add = lf_rows_to_add.clone().collect()?;
+            println!(
+                "Debug get_hashmap_duplicates: {:#?}",
+                (&df_rows_to_add, &vec_ids_to_remove)
+            );
+            Ok((key, (lf_rows_to_add, vec_ids_to_remove)))
+        })
+        .collect()
+}
+
+fn get_rows_to_add_and_remove(
+    hashmap_duplicates: HashMap<String, (LazyFrame, Vec<String>)>,
+) -> PolarsResult<(LazyFrame, Vec<String>)> {
+    let vec_all_rows_to_add: Vec<LazyFrame> = hashmap_duplicates
+        .clone()
+        .into_iter()
+        .map(|(_, (lf_rows_to_add, _))| lf_rows_to_add)
+        .collect();
+    let lf_all_rows_to_add = concat(vec_all_rows_to_add, UnionArgs::default())?;
+    let df_debug = lf_all_rows_to_add.clone().collect()?;
+
+    let vec_all_ids_to_remove: Vec<String> = hashmap_duplicates
+        .into_iter()
+        .flat_map(|(_, (_, vec_ids_to_remove))| vec_ids_to_remove)
+        .collect();
+    // println!("{}", df_debug);
+    println!("lf: {:#?}\nids: {:#?}", df_debug, vec_all_ids_to_remove);
+    Ok((lf_all_rows_to_add, vec_all_ids_to_remove))
 }
 
 #[tokio::main]
@@ -367,9 +379,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_owned()
         .to_string(PostgresQueryBuilder);
     let rows: Vec<HddSchema> = sqlx::query_as(&sql).fetch_all(&pool).await?;
-    let mut df = struct_to_dataframe(&rows);
+    let df_original = struct_to_dataframe(&rows);
 
-    let lf = df.lazy().with_columns(vec![
+    let lf_original = df_original.lazy().with_columns(vec![
         col_pce_with_polars_expr(SchemasEnum::Hdd),
         col_nom_with_polars_expr(SchemasEnum::Hdd),
         col_prenom_with_polars_expr(SchemasEnum::Hdd),
@@ -382,17 +394,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         col(Hdd::Id.as_str()),
     ]);
 
-    let mut lf_test = transform_deduplication_optimize(lf)?;
-    let hash_map = partition_by_name(lf_test.clone())?;
-    println!("Deduplication optimize test: {:#?}", lf_test.clone().collect()?);
+    let exprs_columns_to_select = [
+        col(Hdd::Id.as_str()),
+        col(Hdd::Nom.as_str()),
+        col(Hdd::Prenom.as_str()),
+        col(Hdd::Pce.as_str()),
+        col(Hdd::Email.as_str()),
+        col(Hdd::Telephone.as_str()),
+        col(Hdd::Siret.as_str()),
+        col(Hdd::SiretSuccesseur.as_str()),
+        col(Hdd::RaisonSociale.as_str()),
+        col(Hdd::IdSource.as_str()),
+    ];
 
-    // df = transform_deduplication(lf)?.collect()?;
-    // println!("Deduplication: {:#?}", df);
+    let lf_duplicates = filter_duplicates(lf_original.clone())?;
+    let hashmap_partitions = hash_partition(
+        lf_duplicates.clone(),
+        Hdd::Nom.as_str(),
+        &exprs_columns_to_select,
+    )?;
+    let hashmap_duplicates = get_hashmap_duplicates(hashmap_partitions)?;
+    let (lf_rows_to_add, vec_ids_to_remove) =
+        get_rows_to_add_and_remove(hashmap_duplicates)?;
+
+    let exprs_columns_to_select_with_ids = [
+        col(Hdd::Id.as_str()),
+        col(Hdd::Nom.as_str()),
+        col(Hdd::Prenom.as_str()),
+        col(Hdd::Pce.as_str()),
+        col(Hdd::Email.as_str()),
+        col(Hdd::Telephone.as_str()),
+        col(Hdd::Siret.as_str()),
+        col(Hdd::SiretSuccesseur.as_str()),
+        col(Hdd::RaisonSociale.as_str()),
+        col(Hdd::IdSource.as_str()),
+        col(Hdd::Ids.as_str()),
+    ];
+    let lf_deduplicated = reconciliate_lf(
+        lf_original,
+        lf_rows_to_add,
+        vec_ids_to_remove,
+        &exprs_columns_to_select_with_ids,
+    )?;
+
+    let mut df_final = lf_deduplicated.collect()?;
+    println!("Deduplication: {:#?}", df_final);
 
     let mut csv_file = std::fs::File::create(
         String::from(FILES_PATH) + "HDD_deduplication_transformed_test.csv",
     )?;
-    CsvWriter::new(&mut csv_file).finish(&mut lf_test.collect()?)?;
+    CsvWriter::new(&mut csv_file).finish(&mut df_final)?;
 
     Ok(())
 }
