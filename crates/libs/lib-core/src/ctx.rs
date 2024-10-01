@@ -33,3 +33,13 @@ impl Ctx {
         ctx
     }
 }
+
+impl Ctx {
+    pub fn user_id(&self) -> i64 {
+        self.user_id
+    }
+
+    pub fn conv_id(&self) -> Option<i64> {
+        self.conv_id
+    }
+}

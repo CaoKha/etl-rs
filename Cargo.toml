@@ -13,3 +13,10 @@ unsafe_code = "forbid"
 [workspace.dependencies]
 time = { version = "0.3", features = ["formatting", "parsing", "serde"] }
 derive_more = { version = "1.0.0-beta", features = ["from", "display"] }
+serde_with = { version = "3", features = ["time_0_3"] }
+sqlx = { version = "0.8", features = [
+  "postgres",
+  "macros",
+  "uuid",
+  "runtime-tokio",
+] }

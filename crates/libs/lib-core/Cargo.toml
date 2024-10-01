@@ -11,6 +11,9 @@ lib-utils = { path = "../lib-utils" }
 lib-auth = { path = "../lib-auth" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
+derive_more = { workspace = true }
+serde_with = { workspace = true }
+sqlx = { workspace = true }
 
 [lints]
 workspace = true

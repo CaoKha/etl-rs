@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 mod error;
 mod scheme;
-use self::error::{Error, Result};
+pub use self::error::{Error, Result};
 
 #[cfg_attr(test, derive(Clone))]
 pub struct ContentToHash {

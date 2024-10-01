@@ -3,5 +3,6 @@
 /mongo-data
 /kafka-data
 .env
-.cargo
+# .cargo
 Cargo.lock
+
