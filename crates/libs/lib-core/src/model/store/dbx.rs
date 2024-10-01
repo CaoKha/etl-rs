@@ -65,12 +65,30 @@ impl Dbx {
         Ok(())
     }
 
+    pub async fn rollback_txn(&self) -> Result<()> {
+        let mut txh_g = self.txn_holder.lock().await;
+        if let Some(mut txn_holder) = txh_g.take() {
+            // Take the TxnHolder out of the Option
+            if txn_holder.counter > 1 {
+                txn_holder.counter -= 1;
+                let _ = txh_g.replace(txn_holder); // Put it back if not the last reference
+            } else {
+                // Perform the actual rollback
+                txn_holder.txn.rollback().await?;
+                // No need to replace, as we want to leave it as None
+            }
+            Ok(())
+        } else {
+            Err(Error::NoTxn)
+        }
+    }
+
     pub async fn commit_txn(&self) -> Result<()> {
         if !self.with_txn {
             return Err(Error::CannotCommitTxnWithtxnFalse);
         }
 
-        let mut txh_g= self.txn_holder.lock().await;
+        let mut txh_g = self.txn_holder.lock().await;
         if let Some(txh) = txh_g.as_mut() {
             let counter = txh.dec();
             if counter == 0 {
@@ -79,7 +97,6 @@ impl Dbx {
                 }
             }
             Ok(())
-
         } else {
             Err(Error::TxnCantCommitNoOpenTxn)
         }
@@ -89,11 +106,15 @@ impl Dbx {
         &self.db_pool
     }
 
-    pub async fn fetch_one<'q, O, A>(&self, query: QueryAs<'q, Postgres, O, A>) -> Result<O>
-    where O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
-        A: IntoArguments<'q, Postgres> + 'q
+    pub async fn fetch_one<'q, O, A>(
+        &self,
+        query: QueryAs<'q, Postgres, O, A>,
+    ) -> Result<O>
+    where
+        O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
+        A: IntoArguments<'q, Postgres> + 'q,
     {
-        let data  = if self.with_txn {
+        let data = if self.with_txn {
             let mut txh_g = self.txn_holder.lock().await;
             if let Some(txn) = txh_g.as_deref_mut() {
                 query.fetch_one(txn.as_mut()).await?
