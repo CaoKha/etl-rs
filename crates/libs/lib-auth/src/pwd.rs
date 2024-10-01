@@ -1,3 +1,19 @@
+//! The pwd module is responsible for hashing and validating hashes.
+//! It follows a multi-scheme hashing code design, allowing each
+//! scheme to provide its own hashing and validation methods.
+//!
+//! Code Design Points:
+//!
+//! - Exposes two public async functions `hash_pwd(...)` and `validate_pwd(...)`
+//! - `ContentToHash` represents the data to be hashed along with the corresponding salt.
+//! - `SchemeStatus` is the result of `validate_pwd` which, upon successful validation, indicates
+//!   whether the password needs to be re-hashed to adopt the latest scheme.
+//! - Internally, the `pwd` module implements a multi-scheme code design with the `Scheme` trait.
+//! - The `Scheme` trait exposes sync functions `hash` and `validate` to be implemented for each scheme.
+//! - The two public async functions `hash_pwd(...)` and `validate_pwd(...)` call the scheme using
+//!   `spawn_blocking` to ensure that long hashing/validation processes do not hinder the execution of smaller tasks.
+//! - Schemes are designed to be agnostic of whether they are in an async or sync context, hence they are async-free.
+
 use std::str::FromStr;
 
 use lazy_regex::regex_captures;
@@ -61,11 +77,44 @@ pub async fn validate_pwd(
     } else {
         SchemeStatus::Outdated
     };
-
+    // Note: Since validate might take some time depending on algo
+    //       doing a spawn_blocking to avoid
     tokio::task::spawn_blocking(move || {
         validate_for_scheme(&scheme_name, to_hash, hashed)
     })
     .await
     .map_err(|_| Error::FailSpawnBlockForValidate)??;
     Ok(scheme_status)
+}
+
+pub async fn hash_pwd(to_hash: ContentToHash) -> Result<String> {
+    tokio::task::spawn_blocking(move || hash_for_scheme(DEFAULT_SCHEME, to_hash))
+        .await
+        .map_err(|_| Error::FailSpawnBlockForHash)?
+}
+
+#[cfg(test)]
+mod tests {
+    pub type Error = Box<dyn std::error::Error>;
+    pub type Result<T> = std::result::Result<T, Error>;
+    use super::*;
+
+    #[tokio::test]
+    async fn test_multi_scheme_ok() -> Result<()> {
+        let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+        let fx_to_hash = ContentToHash {
+            content: "hello world".to_string(),
+            salt: fx_salt,
+        };
+
+        let pwd_hashed = hash_for_scheme("01", fx_to_hash.clone())?;
+        let pwd_validate = validate_pwd(fx_to_hash, pwd_hashed).await?;
+
+        assert!(
+            matches!(pwd_validate, SchemeStatus::Outdated),
+            "status should be SchemeStatus::Outdated"
+        );
+
+        Ok(())
+    }
 }
