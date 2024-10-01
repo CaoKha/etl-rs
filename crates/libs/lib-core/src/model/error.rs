@@ -1,12 +1,12 @@
-use lib_auth::pwd;
 use derive_more::From;
+use lib_auth::pwd;
 use serde::Serialize;
 
 #[derive(Debug, Serialize, From)]
 pub enum Error {
     EntityNotFound {
-        entity:  &'static str,
-        id: i64
+        entity: &'static str,
+        id: i64,
     },
     ListLimitOverMax {
         max: i64,
@@ -23,6 +23,4 @@ pub enum Error {
     CantCreateModelManagerProvider(String),
     #[from]
     Pwd(pwd::Error),
-    
-
 }
