@@ -7,6 +7,9 @@ edition = "2021"
 name = "lib_data_processing"
 crate-type = ["cdylib", "lib"]
 
+[lints]
+workspace = true
+
 [dependencies]
 tokio = { version = "1.38", features = ["rt-multi-thread", "sync", "macros"] }
 rdkafka = { version = "0.36", features = ["cmake-build"] }

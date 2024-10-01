@@ -46,7 +46,7 @@ mod tests {
     fn test_col_libelle_naf_with_polars_expr() {
         // Create a DataFrame with test data
         let df = df![
-            Jdd::CodeNaf.as_str() => [
+            Jdd::LibeleNaf.as_str() => [
                 Some("011;1Z"),
                 Some("1234a"),
                 Some("5678B"),
@@ -67,7 +67,7 @@ mod tests {
 
         // Expected DataFrame
         let expected_df = df![
-            Jdd::CodeNaf.as_str() => [
+            Jdd::LibeleNaf.as_str() => [
                 Some("0111Z"),
                 Some("1234A"), // Unchanged
                 Some("5678B"), // Unchanged
@@ -80,10 +80,10 @@ mod tests {
 
         // Extract the Series for comparison
         let result_series = result_df
-            .column(Jdd::CodeNaf.as_str())
+            .column(Jdd::LibeleNaf.as_str())
             .expect("Result column not found");
         let expected_series = expected_df
-            .column(Jdd::CodeNaf.as_str())
+            .column(Jdd::LibeleNaf.as_str())
             .expect("Expected column not found");
 
         // Ensure the lengths of both Series are the same
