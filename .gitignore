@@ -2,7 +2,7 @@
 /pgdata
 /mongo-data
 /kafka-data
-.env
+# .env
 # .cargo
 Cargo.lock
 
