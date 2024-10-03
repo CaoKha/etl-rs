@@ -14,9 +14,16 @@ unsafe_code = "forbid"
 time = { version = "0.3", features = ["formatting", "parsing", "serde"] }
 derive_more = { version = "1.0.0-beta", features = ["from", "display"] }
 serde_with = { version = "3", features = ["time_0_3"] }
-sqlx = { version = "0.8", features = [
+sqlx = { version = "0.7", features = [
   "postgres",
   "macros",
   "uuid",
   "runtime-tokio",
 ] }
+sea-query = "0.31"
+sea-query-binder = { version = "0.6", features = [
+  "sqlx-postgres",
+  "with-uuid",
+  "with-time",
+] }
+modql = { version = "0.4", features = ["with-sea-query"] }
