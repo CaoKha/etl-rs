@@ -1,6 +1,7 @@
 // region: -- Modules 
 mod crud_fns;
 mod utils;
+mod macro_utils;
 use modql::SIden;
 use sea_query::{Iden, IntoIden, TableRef};
 

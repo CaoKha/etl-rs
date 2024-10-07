@@ -1,0 +1,107 @@
+use super::base::DbBmc;
+use crate::ctx::Ctx;
+use crate::generate_common_bmc_fns;
+use crate::model::modql_utils::time_to_sea_value;
+use crate::model::{base, ModelManager, Result};
+use lib_utils::time::Rfc3339;
+use modql::field::Fields;
+use modql::filter::{FilterNodes, ListOptions, OpValsInt64, OpValsString, OpValsValue};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use sqlx::types::time::OffsetDateTime;
+use sqlx::FromRow;
+
+#[serde_as]
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct Agent {
+    pub id: i64,
+    // -- Relations
+    pub owner_id: i64,
+
+    // -- Properties
+    pub name: String,
+    pub ai_provider: String,
+    pub ai_model: String,
+
+    // -- Timestamps
+    pub cid: i64,
+    #[serde_as(as = "Rfc3339")]
+    pub ctime: OffsetDateTime,
+    pub mid: i64,
+    #[serde_as(as = "Rfc3339")]
+    pub mtime: OffsetDateTime,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct AgentForCreate {
+    pub name: String,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct AgentForUpdate {
+    pub name: Option<String>,
+}
+
+#[derive(FilterNodes, Default, Deserialize)]
+pub struct AgentFilter {
+    pub id: Option<OpValsInt64>,
+    pub name: Option<OpValsString>,
+    pub cid: Option<OpValsInt64>,
+    #[modql(to_sea_value_fn = "time_to_sea_value")]
+    pub ctime: Option<OpValsValue>,
+    pub mid: Option<OpValsInt64>,
+    #[modql(to_sea_value_fn = "time_to_sea_value")]
+    pub mtime: Option<OpValsValue>,
+}
+
+pub struct AgentBmc;
+
+impl DbBmc for AgentBmc {
+    const TABLE: &'static str = "agent";
+
+    fn has_owner_id() -> bool {
+        true
+    }
+}
+
+generate_common_bmc_fns!(
+    Bmc: AgentBmc,
+    Entity: Agent,
+    ForCreate: AgentForCreate,
+    ForUpdate: AgentForUpdate,
+    Filter: AgentFilter,
+);
+
+#[cfg(test)]
+mod tests {
+    type Error = Box<dyn std::error::Error>;
+    type Result<T> = std::result::Result<T, Error>;
+    use super::*;
+    use crate::_dev_utils::{self, clean_agents};
+    // use serde_json::json;
+    use serial_test::serial;
+
+    #[serial]
+    #[tokio::test]
+    async fn test_create_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+        let fx_name = "test_create_ok agent 01";
+
+        // -- Execute
+        let fx_agent_c = AgentForCreate {
+            name: fx_name.to_string(),
+        };
+        let agent_id = AgentBmc::create(&ctx, &mm, fx_agent_c).await?;
+
+        // -- Check
+        let agent = AgentBmc::get(&ctx, &mm, agent_id).await?;
+        assert_eq!(agent.name, fx_name);
+
+        // -- Clean
+        let count = clean_agents(&ctx, &mm, "test_create_ok").await?;
+        assert_eq!(count, 1, "Should have cleaned only 1 agent");
+        Ok(())
+    }
+}

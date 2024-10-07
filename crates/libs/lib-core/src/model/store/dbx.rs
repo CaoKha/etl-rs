@@ -81,7 +81,7 @@ impl Dbx {
         if let Some(mut txn_holder) = txh_g.take() {
             // Take the TxnHolder out of the Option
             if txn_holder.counter > 1 {
-                txn_holder.dec(); // WARN: trying to use dec() instead of txn_holder.counter -= 1
+                txn_holder.dec(); // INFO: trying to use dec() instead of txn_holder.counter -= 1
                 let _ = txh_g.replace(txn_holder); // Put it back if not the last reference
             } else {
                 // Perform the actual rollback

@@ -2,16 +2,19 @@ use modql::{
     field::HasSeaFields,
     filter::{FilterGroups, ListOptions},
 };
-use sea_query::{Condition, ConditionalStatement, Expr, PostgresQueryBuilder, Query};
+use sea_query::{Condition, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
-use sqlx::{postgres::PgRow, FromRow};
+use sqlx::{postgres::PgRow, FromRow, Row};
 
 use crate::{
     ctx::Ctx,
     model::{Error, ModelManager, Result},
 };
 
-use super::{utils::prep_fields_for_create, CommonIden, DbBmc, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
+use super::{
+    prep_fields_for_update, utils::prep_fields_for_create, CommonIden, DbBmc, LIST_LIMIT_DEFAULT,
+    LIST_LIMIT_MAX,
+};
 pub async fn create<MC, E>(ctx: &Ctx, mm: &ModelManager, data: E) -> Result<i64>
 where
     MC: DbBmc,
@@ -123,7 +126,7 @@ where
         .map(|item| item.into_iter().next())
 }
 
-async fn list<MC, E, F>(
+pub async fn list<MC, E, F>(
     _ctx: &Ctx,
     mm: &ModelManager,
     filter: Option<F>,
@@ -183,4 +186,123 @@ fn compute_list_options(list_options: Option<ListOptions>) -> Result<ListOptions
             order_bys: Some("id".into()),
         })
     }
+}
+
+pub async fn update<MC, E>(ctx: &Ctx, mm: &ModelManager, id: i64, data: E) -> Result<()>
+where
+    MC: DbBmc,
+    E: HasSeaFields,
+{
+    // -- Prep Fields
+    let mut fields = data.not_none_sea_fields();
+    prep_fields_for_update::<MC>(&mut fields, ctx.user_id());
+
+    // -- Build query
+    let fields_iter = fields.for_sea_update();
+    let mut query = Query::update();
+    query
+        .table(MC::table_ref())
+        .values(fields_iter)
+        .and_where(Expr::col(CommonIden::Id).eq(id));
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let sqlx_query = sqlx::query_with(&sql, values);
+    let count = mm.dbx().execute(sqlx_query).await?;
+
+    // -- Check result
+    if count == 0 {
+        Err(Error::EntityNotFound {
+            entity: MC::TABLE,
+            id,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+pub async fn delete<MC>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()>
+where
+    MC: DbBmc,
+{
+    // -- Build query
+    let mut query = Query::delete();
+    query
+        .from_table(MC::table_ref())
+        .and_where(Expr::col(CommonIden::Id).eq(id));
+
+    // -- Execute query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let sqlx_query = sqlx::query_with(&sql, values);
+    let count = mm.dbx().execute(sqlx_query).await?;
+
+    // -- Check result
+    if count == 0 {
+        Err(Error::EntityNotFound {
+            entity: MC::TABLE,
+            id,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+pub async fn delete_many<MC>(_ctx: &Ctx, mm: &ModelManager, ids: Vec<i64>) -> Result<u64>
+where
+    MC: DbBmc,
+{
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    // -- Get `ids` vector length so we don't need to clone vector `ids`
+    let ids_length = ids.len();
+
+    // -- Build query
+    let mut query = Query::delete();
+    query
+        .from_table(MC::table_ref())
+        .and_where(Expr::col(CommonIden::Id).is_in(ids));
+
+    // -- Execute query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let sqlx_query = sqlx::query_with(&sql, values);
+    let count = mm.dbx().execute(sqlx_query).await?;
+
+    // -- Check result
+    if count as usize != ids_length {
+        Err(Error::EntityNotFound {
+            entity: MC::TABLE,
+            id: 0,
+        })
+    } else {
+        Ok(count)
+    }
+}
+
+pub async fn count<MC, F>(_ctx: &Ctx, mm: &ModelManager, filter: Option<F>) -> Result<i64>
+where
+    MC: DbBmc,
+    F: Into<FilterGroups>,
+{
+    let db = mm.dbx().db();
+    // -- Build query
+    let mut query = Query::select()
+        .from(MC::table_ref())
+        .expr(Expr::col(sea_query::Asterisk).count())
+        .to_owned();
+
+    // -- Condition from filter
+    if let Some(filter) = filter {
+        let filters: FilterGroups = filter.into();
+        let cond: Condition = filters.try_into()?;
+        query.cond_where(cond);
+    }
+
+    let query_str = query.to_string(PostgresQueryBuilder);
+    let result = sqlx::query(&query_str)
+        .fetch_one(db)
+        .await
+        .map_err(|_| Error::CountFail)?;
+
+    let count: i64 = result.try_get("count").map_err(|_| Error::CountFail)?;
+    Ok(count)
 }
