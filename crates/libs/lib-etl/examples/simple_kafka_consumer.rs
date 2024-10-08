@@ -1,4 +1,4 @@
-use lib_data_processing::kafka::create_kafka_stream_consumer;
+use lib_etl::kafka::create_kafka_stream_consumer;
 use clap::{Arg, Command};
 use log::{info, warn};
 

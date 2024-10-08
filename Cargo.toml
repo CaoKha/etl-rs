@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "crates/libs/lib-data-processing",
+  "crates/libs/lib-etl",
   "crates/libs/lib-utils",
   "crates/libs/lib-auth",
   "crates/libs/lib-core",

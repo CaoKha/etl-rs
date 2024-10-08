@@ -1,10 +1,10 @@
 [package]
-name = "lib-data-processing"
+name = "lib-etl"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "lib_data_processing"
+name = "lib_etl"
 crate-type = ["cdylib", "lib"]
 
 [lints]

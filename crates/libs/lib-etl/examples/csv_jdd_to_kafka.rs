@@ -1,6 +1,6 @@
-use lib_data_processing::config::{Config, IO_CONFIG_PATH};
-use lib_data_processing::csv::csv_to_json;
-use lib_data_processing::kafka::push_json_to_kafka;
+use lib_etl::config::{Config, IO_CONFIG_PATH};
+use lib_etl::csv::csv_to_json;
+use lib_etl::kafka::push_json_to_kafka;
 use log::{error, info};
 
 #[tokio::main]

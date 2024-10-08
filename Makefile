@@ -20,19 +20,19 @@ docker-clean:
 	docker compose down --rmi="all" --volumes
 
 example-csv-jdd-to-postgres:
-	cargo run --package lib-data-processing --example csv_jdd_to_postgres
+	cargo run --package lib-etl --example csv_jdd_to_postgres
 
 example-csv-hdd-to-postgres:
-	cargo run  --package lib-data-processing --example csv_hdd_to_postgres
+	cargo run  --package lib-etl --example csv_hdd_to_postgres
 
 example-transform-jdd-normalisation:
-	cargo run --package lib-data-processing --example transform_jdd_normalisation
+	cargo run --package lib-etl --example transform_jdd_normalisation
 
 example-transform-hdd-deduplication:
-	cargo run --package lib-data-processing --example transform_hdd_deduplication
+	cargo run --package lib-etl --example transform_hdd_deduplication
 
 example-csv-jdd-to-kafka:
-	cargo run --package lib-data-processing --example csv_jdd_to_kafka
+	cargo run --package lib-etl --example csv_jdd_to_kafka
 
 example-kafka-jdd-to-mongo:
-	cargo run --package lib-data-processing --example kafka_jdd_to_mongo
+	cargo run --package lib-etl --example kafka_jdd_to_mongo
