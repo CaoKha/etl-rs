@@ -10,7 +10,7 @@ use lib_etl::transforms::raison_sociale::col_raison_sociale_with_polars_expr;
 use lib_etl::transforms::siret::col_siret_with_polars_expr;
 use lib_etl::transforms::siret_successeur::col_siret_ss_with_polars_expr;
 use lib_etl::transforms::utils::struct_to_dataframe;
-use log::info;
+use log::{debug, info};
 use polars::lazy::dsl::{col, concat_list, lit, Expr};
 use polars::prelude::*;
 use rayon::prelude::*;
@@ -323,7 +323,7 @@ fn hash_partition(
         frames_map_df
             .insert(name, filtered_lf.select(exprs_columns_to_select).collect()?);
     }
-    println!("frames_map: {:#?}", frames_map_df);
+    info!("Dataframe partitions by name: {:#?}", frames_map_df);
     Ok(frames_map)
 }
 
@@ -335,7 +335,7 @@ fn get_hashmap_duplicates(
         .map(|(key, lf)| {
             let (lf_rows_to_add, vec_ids_to_remove) = detect_duplicates(lf)?;
             let df_rows_to_add = lf_rows_to_add.clone().collect()?;
-            println!(
+            debug!(
                 "Debug get_hashmap_duplicates: {:#?}",
                 (&df_rows_to_add, &vec_ids_to_remove)
             );
@@ -359,16 +359,16 @@ fn get_rows_to_add_and_remove(
         .into_iter()
         .flat_map(|(_, (_, vec_ids_to_remove))| vec_ids_to_remove)
         .collect();
-    // println!("{}", df_debug);
-    println!("lf: {:#?}\nids: {:#?}", df_debug, vec_all_ids_to_remove);
+    info!("LazyFrame_all_rows_to_add: {:#?}\nids_to_remove: {:#?}", df_debug, vec_all_ids_to_remove);
     Ok((lf_all_rows_to_add, vec_all_ids_to_remove))
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
     dotenv::dotenv().ok();
     // Initialize PostgreSQL connection pool
-    let postgres_url = env::var("POSTGRES_URL").expect("POSTGRES_URI must be set");
+    let postgres_url = env::var("DATABASE_URL").expect("POSTGRES_URI must be set");
     info!("Database URL: {}", postgres_url);
     let pool = PgPool::connect(&postgres_url)
         .await
@@ -438,7 +438,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let mut df_final = lf_deduplicated.collect()?;
-    println!("Deduplication: {:#?}", df_final);
+    info!("Deduplication: {:#?}", df_final);
 
     let mut csv_file = std::fs::File::create(
         String::from(FILES_PATH) + "HDD_deduplication_transformed_test.csv",

@@ -11,7 +11,7 @@ use tracing::info;
 type Db = Pool<Postgres>;
 
 // NOTE: Hardcode to prevent deployed system db update.
-const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:postgres@localhost/etl_db";
+const PG_DEV_POSTGRES_URL: &str = "postgres://nguyencaokha131995:postgres@localhost/etl_db";
 const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@localhost/app_db";
 
 // sql files

@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Configuration loaded successfully");
 
-    println!("{:?}", &config.csv.hdd.file_path);
+    info!("CSV path: {:?}", &config.csv.hdd.file_path);
 
     let mut csv_reader = csv::ReaderBuilder::new()
         .delimiter(b';')
