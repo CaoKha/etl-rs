@@ -7,7 +7,7 @@ use sea_query::{ColumnDef, PostgresQueryBuilder, Table};
 use sqlx::PgPool;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     env_logger::init();
 
     let config = match Config::load(IO_CONFIG_PATH) {

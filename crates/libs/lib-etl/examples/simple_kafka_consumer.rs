@@ -10,7 +10,7 @@ use rdkafka::{
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     env_logger::init();
     let matches = Command::new("consumer example")
         .version(option_env!("CARGO_PKG_VERSION").unwrap_or(""))

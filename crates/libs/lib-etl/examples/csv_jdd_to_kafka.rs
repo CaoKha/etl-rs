@@ -4,7 +4,7 @@ use lib_etl::kafka::push_json_to_kafka;
 use log::{error, info};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     env_logger::init();
 
     let config = match Config::load(IO_CONFIG_PATH) {

@@ -364,7 +364,7 @@ fn get_rows_to_add_and_remove(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     env_logger::init();
     dotenv::dotenv().ok();
     // Initialize PostgreSQL connection pool

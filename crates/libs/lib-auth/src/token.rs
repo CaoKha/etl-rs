@@ -25,7 +25,7 @@ pub struct Token {
 
 impl FromStr for Token {
     type Err = Error;
-    fn from_str(token_str: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(token_str: &str) -> core::result::Result<Self, Self::Err> {
         let splits: Vec<&str> = token_str.split('.').collect();
         if splits.len() != 3 {
             return Err(Error::InvalidFormat);
@@ -44,8 +44,8 @@ impl FromStr for Token {
 impl Display for Token {
     fn fmt(
         &self,
-        f: &mut std::fmt::Formatter<'_>,
-    ) -> std::result::Result<(), std::fmt::Error> {
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::result::Result<(), core::fmt::Error> {
         write!(
             f,
             "{}.{}.{}",

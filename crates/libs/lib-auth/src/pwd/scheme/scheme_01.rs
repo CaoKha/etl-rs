@@ -48,8 +48,8 @@ mod tests {
     use super::*;
     use crate::{config::auth_config, pwd::ContentToHash};
     use uuid::Uuid;
-    pub type Error = Box<dyn std::error::Error>;
-    pub type Result<T> = std::result::Result<T, Error>;
+    pub type Error = Box<dyn core::error::Error>;
+    pub type Result<T> = core::result::Result<T, Error>;
 
     #[test]
     fn test_scheme_01_hash_into_b64u_ok() -> Result<()> {

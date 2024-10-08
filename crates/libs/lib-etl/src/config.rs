@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
+use core::error::Error;
 use std::fs;
 
 pub const IO_CONFIG_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/configs/io-config.json");

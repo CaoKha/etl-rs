@@ -74,10 +74,11 @@ generate_common_bmc_fns!(
 
 #[cfg(test)]
 mod tests {
-    type Error = Box<dyn std::error::Error>;
-    type Result<T> = std::result::Result<T, Error>;
+    type Error = Box<dyn core::error::Error>;
+    type Result<T> = core::result::Result<T, Error>;
     use super::*;
     use crate::_dev_utils::{self, clean_agents};
+    use serde_json::json;
     // use serde_json::json;
     use serial_test::serial;
 
@@ -102,6 +103,30 @@ mod tests {
         // -- Clean
         let count = clean_agents(&ctx, &mm, "test_create_ok").await?;
         assert_eq!(count, 1, "Should have cleaned only 1 agent");
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_create_many_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+        let fx_name = "test_create_many_ok agent 01";
+
+        // -- Exec
+        let fx_agent_c = AgentForCreate {
+            name: fx_name.to_string(),
+        };
+        let fx_agent_c2 = AgentForCreate {
+            name: fx_name.to_string(),
+        };
+        let agent_ids = AgentBmc::create_many(&ctx, &mm, vec![fx_agent_c, fx_agent_c2]).await?;
+        let agent_filter: AgentFilter = serde_json::from_value(json!({
+        "id": {"$in": agent_ids}
+        }))?;
+        let agents = AgentBmc::list(&ctx, &mm, Some(vec![agent_filter]), None).await?;
+
         Ok(())
     }
 }

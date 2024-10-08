@@ -22,19 +22,19 @@ pub fn b64u_decode_to_string(b64u: &str) -> Result<String> {
 pub enum Error {
 	FailToB64uDecode,
 }
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 // region --- Error Boilerplate
-impl std::fmt::Display for Error {
+impl core::fmt::Display for Error {
 	fn fmt(
 		&self,
-		fmt: &mut std::fmt::Formatter,
-	) -> std::result::Result<(), std::fmt::Error> {
+		fmt: &mut core::fmt::Formatter,
+	) -> core::result::Result<(), core::fmt::Error> {
 		write!(fmt, "{self:?}")
 	}
 }
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 // endregion --- Error Boilerplate
 
 // endregion --- Error

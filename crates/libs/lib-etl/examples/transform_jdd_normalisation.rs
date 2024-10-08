@@ -19,7 +19,8 @@ use sqlx::PgPool;
 use std::env;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
+    env_logger::init();
     dotenv::dotenv().ok();
 
     // Initialize PostgreSQL connection pool

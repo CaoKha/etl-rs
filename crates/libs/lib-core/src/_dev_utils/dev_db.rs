@@ -20,7 +20,7 @@ const SQL_DIR: &str = "sql/dev_initial";
 
 const DEMO_PWD: &str = "welcome";
 
-pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn init_dev_db() -> Result<(), Box<dyn core::error::Error>> {
 	info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
 
 	// -- Get the sql_dir

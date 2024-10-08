@@ -221,8 +221,8 @@ impl UserBmc {
 
 #[cfg(test)]
 mod tests {
-    pub type Error = Box<dyn std::error::Error>;
-    pub type Result<T> = std::result::Result<T, Error>;
+    pub type Error = Box<dyn core::error::Error>;
+    pub type Result<T> = core::result::Result<T, Error>;
 
     use super::*;
     use crate::_dev_utils;

@@ -16,7 +16,7 @@ pub fn get_env_b64u_as_u8s(name: &'static str) -> Result<Vec<u8>> {
 }
 
 // region:    --- Error
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
@@ -25,16 +25,16 @@ pub enum Error {
 }
 
 // region:    --- Error Boilerplate
-impl std::fmt::Display for Error {
+impl core::fmt::Display for Error {
 	fn fmt(
 		&self,
-		fmt: &mut std::fmt::Formatter,
-	) -> std::result::Result<(), std::fmt::Error> {
+		fmt: &mut core::fmt::Formatter,
+	) -> core::result::Result<(), core::fmt::Error> {
 		write!(fmt, "{self:?}")
 	}
 }
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 // endregion: --- Error Boilerplate
 
 // endregion: --- Error

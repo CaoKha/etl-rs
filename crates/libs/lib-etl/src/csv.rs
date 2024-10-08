@@ -1,6 +1,6 @@
 use csv::ReaderBuilder;
 use serde_json::{json, Map, Value};
-use std::error::Error;
+use core::error::Error;
 
 pub fn csv_to_json(file_path: &str) -> Result<Vec<Value>, Box<dyn Error>> {
     let mut reader = ReaderBuilder::new()

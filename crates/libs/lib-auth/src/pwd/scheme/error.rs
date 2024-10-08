@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Serialize)]
 pub enum Error {
@@ -11,10 +11,10 @@ pub enum Error {
     SchemeNotFound(String),
 }
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{self:?}")
     }
 }
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}

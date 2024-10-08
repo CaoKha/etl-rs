@@ -11,7 +11,7 @@ use rdkafka::{
     ClientContext, TopicPartitionList,
 };
 use serde_json::Value;
-use std::error::Error;
+use core::error::Error;
 
 // --Start-Producer--
 fn create_kafka_producer(kafka_config: &KafkaConfig) -> FutureProducer {

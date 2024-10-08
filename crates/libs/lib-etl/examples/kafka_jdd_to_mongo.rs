@@ -95,7 +95,7 @@ async fn save_kafka_messages_to_mongo(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     dotenv::dotenv().ok();
     env_logger::init();
 
