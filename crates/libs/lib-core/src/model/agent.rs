@@ -77,7 +77,7 @@ mod tests {
     type Error = Box<dyn core::error::Error>;
     type Result<T> = core::result::Result<T, Error>;
     use super::*;
-    use crate::_dev_utils::{self, clean_agents};
+    use crate::_dev_utils::{self, clean_agents, seed_agent};
     use serde_json::json;
     // use serde_json::json;
     use serial_test::serial;
@@ -126,6 +126,35 @@ mod tests {
         "id": {"$in": agent_ids}
         }))?;
         let agents = AgentBmc::list(&ctx, &mm, Some(vec![agent_filter]), None).await?;
+        assert_eq!(agents.len(), 2, "should have only retrieved 2 agents");
+
+        Ok(())
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_update_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let mm = _dev_utils::init_test().await;
+        let ctx = Ctx::root_ctx();
+
+        let fx_name = "test_update_ok agent 01";
+        let fx_agent_id = seed_agent(&ctx, &mm, fx_name).await?;
+        let fx_name_updated = "test_update_ok agent 02 - updated";
+
+        // -- Exec
+        let fx_agent_u = AgentForUpdate {
+            name: Some(fx_name_updated.to_string()),
+        };
+        AgentBmc::update(&ctx, &mm, fx_agent_id, fx_agent_u).await?;
+
+        // -- Check
+        let agent = AgentBmc::get(&ctx, &mm, fx_agent_id).await?;
+        assert_eq!(agent.name, fx_name_updated);
+
+        // -- Clean
+        let count = clean_agents(&ctx, &mm, "test_update_ok agent").await?;
+        assert_eq!(count, 1, "Should have cleaned only 1 agent");
 
         Ok(())
     }
