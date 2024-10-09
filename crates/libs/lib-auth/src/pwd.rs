@@ -49,11 +49,7 @@ impl FromStr for PwdParts {
     }
 }
 
-fn validate_for_scheme(
-    scheme_name: &str,
-    to_hash: ContentToHash,
-    pwd_ref: String,
-) -> Result<()> {
+fn validate_for_scheme(scheme_name: &str, to_hash: ContentToHash, pwd_ref: String) -> Result<()> {
     get_scheme(scheme_name)?.validate(&to_hash, &pwd_ref)?;
     Ok(())
 }
@@ -64,10 +60,7 @@ fn hash_for_scheme(scheme_name: &str, to_hash: ContentToHash) -> Result<String> 
 }
 
 /// Validate if an ContentToHash matches
-pub async fn validate_pwd(
-    to_hash: ContentToHash,
-    pwd_ref: String,
-) -> Result<SchemeStatus> {
+pub async fn validate_pwd(to_hash: ContentToHash, pwd_ref: String) -> Result<SchemeStatus> {
     let PwdParts {
         scheme_name,
         hashed,
@@ -79,11 +72,9 @@ pub async fn validate_pwd(
     };
     // Note: Since validate might take some time depending on algo
     //       doing a spawn_blocking to avoid
-    tokio::task::spawn_blocking(move || {
-        validate_for_scheme(&scheme_name, to_hash, hashed)
-    })
-    .await
-    .map_err(|_| Error::FailSpawnBlockForValidate)??;
+    tokio::task::spawn_blocking(move || validate_for_scheme(&scheme_name, to_hash, hashed))
+        .await
+        .map_err(|_| Error::FailSpawnBlockForValidate)??;
     Ok(scheme_status)
 }
 

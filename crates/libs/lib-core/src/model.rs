@@ -22,8 +22,8 @@ mod base;
 mod error;
 mod store;
 
-pub mod modql_utils;
 pub mod agent;
+pub mod modql_utils;
 pub mod user;
 
 pub use self::error::{Error, Result};

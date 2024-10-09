@@ -96,7 +96,6 @@ pub struct HddSchemaCSV {
 
     #[serde(rename = "PCE")]
     pub pce: Option<f64>,
-
     // #[serde(rename = "ID")]
     // pub id: i32,
 }

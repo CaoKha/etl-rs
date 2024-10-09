@@ -17,14 +17,14 @@ pub mod code_naf;
 pub mod email;
 pub mod libelle_naf;
 pub mod nom;
+pub mod pce;
 pub mod prenom;
 pub mod raison_sociale;
 pub mod siren;
 pub mod siret;
+pub mod siret_successeur;
 pub mod telephone;
 pub mod utils;
-pub mod pce;
-pub mod siret_successeur;
 
 fn get_transform_col_fn(transform: &Transform) -> impl Fn(&Series) -> PolarsResult<Option<Series>> {
     match transform {

@@ -117,10 +117,7 @@ impl Dbx {
         &self.db_pool
     }
 
-    pub async fn fetch_one<'q, O, A>(
-        &self,
-        query: QueryAs<'q, Postgres, O, A>,
-    ) -> Result<O>
+    pub async fn fetch_one<'q, O, A>(&self, query: QueryAs<'q, Postgres, O, A>) -> Result<O>
     where
         O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
         A: IntoArguments<'q, Postgres> + 'q,
@@ -159,10 +156,7 @@ impl Dbx {
         Ok(data)
     }
 
-    pub async fn fetch_all<'q, O, A>(
-        &self,
-        query: QueryAs<'q, Postgres, O, A>,
-    ) -> Result<Vec<O>>
+    pub async fn fetch_all<'q, O, A>(&self, query: QueryAs<'q, Postgres, O, A>) -> Result<Vec<O>>
     where
         O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
         A: IntoArguments<'q, Postgres> + 'q,

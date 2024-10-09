@@ -21,119 +21,110 @@ use std::env;
 
 fn detect_duplicates(lf: LazyFrame) -> PolarsResult<(LazyFrame, Vec<String>)> {
     // Self join dataframe to find duplications
-    let mut lf_deduplicating =
-        lf.clone()
-            .cross_join(lf, Some(PlSmallStr::from("_right")))
-            .filter(
-                col(Hdd::Siret.as_str())
-                    .is_null()
-                    .and(
-                        col(Hdd::Id.as_str()).lt(col(format!(
-                            "{}_{}",
-                            Hdd::Id.as_str(),
-                            "right"
-                        )
-                        .as_str())), // use
-                                     // less than to remove combinations with the same Id element but with different
-                                     // order
+    let mut lf_deduplicating = lf
+        .clone()
+        .cross_join(lf, Some(PlSmallStr::from("_right")))
+        .filter(
+            col(Hdd::Siret.as_str())
+                .is_null()
+                .and(
+                    col(Hdd::Id.as_str())
+                        .lt(col(format!("{}_{}", Hdd::Id.as_str(), "right").as_str())), // use
+                                                                                        // less than to remove combinations with the same Id element but with different
+                                                                                        // order
+                )
+                .and(
+                    col(Hdd::Nom.as_str())
+                        .eq(col(format!("{}_{}", Hdd::Nom.as_str(), "right").as_str())),
+                )
+                .and(
+                    (col(Hdd::Prenom.as_str()).eq(col(format!(
+                        "{}_{}",
+                        Hdd::Prenom.as_str(),
+                        "right"
                     )
-                    .and(col(Hdd::Nom.as_str()).eq(col(
-                        format!("{}_{}", Hdd::Nom.as_str(), "right").as_str(),
-                    )))
-                    .and(
-                        (col(Hdd::Prenom.as_str()).eq(col(format!(
+                    .as_str())))
+                    .or(col(Hdd::Prenom.as_str()).is_null())
+                    .or(col(format!("{}_{}", Hdd::Prenom.as_str(), "right").as_str()).is_null()),
+                )
+                .and(
+                    col(Hdd::Pce.as_str())
+                        .eq(col(format!("{}_{}", Hdd::Pce.as_str(), "right").as_str()))
+                        .or(col(Hdd::Email.as_str()).eq(col(format!(
                             "{}_{}",
-                            Hdd::Prenom.as_str(),
+                            Hdd::Email.as_str(),
                             "right"
                         )
                         .as_str())))
-                        .or(col(Hdd::Prenom.as_str()).is_null())
-                        .or(col(
-                            format!("{}_{}", Hdd::Prenom.as_str(), "right").as_str()
+                        .or(col(Hdd::Telephone.as_str()).eq(col(format!(
+                            "{}_{}",
+                            Hdd::Telephone.as_str(),
+                            "right"
                         )
-                        .is_null()),
-                    )
-                    .and(
-                        col(Hdd::Pce.as_str())
-                            .eq(col(format!("{}_{}", Hdd::Pce.as_str(), "right")
-                                .as_str()))
-                            .or(col(Hdd::Email.as_str()).eq(col(format!(
-                                "{}_{}",
-                                Hdd::Email.as_str(),
-                                "right"
-                            )
-                            .as_str())))
-                            .or(col(Hdd::Telephone.as_str()).eq(col(format!(
-                                "{}_{}",
-                                Hdd::Telephone.as_str(),
-                                "right"
-                            )
-                            .as_str()))),
-                    ),
-            )
-            .select([
-                col(Hdd::Nom.as_str()),
-                col(Hdd::Prenom.as_str()),
+                        .as_str()))),
+                ),
+        )
+        .select([
+            col(Hdd::Nom.as_str()),
+            col(Hdd::Prenom.as_str()),
+            col(Hdd::Id.as_str()),
+            concat_list([
                 col(Hdd::Id.as_str()),
-                concat_list([
-                    col(Hdd::Id.as_str()),
-                    col(format!("{}_{}", Hdd::Id.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::Ids.as_str()),
-                concat_list([
-                    col(Hdd::Pce.as_str()),
-                    col(format!("{}_{}", Hdd::Pce.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::Pce.as_str()),
-                concat_list([
-                    col(Hdd::IdSource.as_str()),
-                    col(format!("{}_{}", Hdd::IdSource.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::IdSource.as_str()),
-                concat_list([
-                    col(Hdd::Telephone.as_str()),
-                    col(format!("{}_{}", Hdd::Telephone.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::Telephone.as_str()),
-                concat_list([
-                    col(Hdd::Email.as_str()),
-                    col(format!("{}_{}", Hdd::Email.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::Email.as_str()),
-                concat_list([
-                    col(Hdd::Siret.as_str()),
-                    col(format!("{}_{}", Hdd::Siret.as_str(), "right").as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::Siret.as_str()),
-                concat_list([
-                    col(Hdd::SiretSuccesseur.as_str()),
-                    col(format!("{}_{}", Hdd::SiretSuccesseur.as_str(), "right")
-                        .as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::SiretSuccesseur.as_str()),
-                concat_list([
-                    col(Hdd::RaisonSociale.as_str()),
-                    col(format!("{}_{}", Hdd::RaisonSociale.as_str(), "right")
-                        .as_str()),
-                ])?
-                .list()
-                .unique()
-                .alias(Hdd::RaisonSociale.as_str()),
-            ]);
+                col(format!("{}_{}", Hdd::Id.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Ids.as_str()),
+            concat_list([
+                col(Hdd::Pce.as_str()),
+                col(format!("{}_{}", Hdd::Pce.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Pce.as_str()),
+            concat_list([
+                col(Hdd::IdSource.as_str()),
+                col(format!("{}_{}", Hdd::IdSource.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::IdSource.as_str()),
+            concat_list([
+                col(Hdd::Telephone.as_str()),
+                col(format!("{}_{}", Hdd::Telephone.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Telephone.as_str()),
+            concat_list([
+                col(Hdd::Email.as_str()),
+                col(format!("{}_{}", Hdd::Email.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Email.as_str()),
+            concat_list([
+                col(Hdd::Siret.as_str()),
+                col(format!("{}_{}", Hdd::Siret.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::Siret.as_str()),
+            concat_list([
+                col(Hdd::SiretSuccesseur.as_str()),
+                col(format!("{}_{}", Hdd::SiretSuccesseur.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::SiretSuccesseur.as_str()),
+            concat_list([
+                col(Hdd::RaisonSociale.as_str()),
+                col(format!("{}_{}", Hdd::RaisonSociale.as_str(), "right").as_str()),
+            ])?
+            .list()
+            .unique()
+            .alias(Hdd::RaisonSociale.as_str()),
+        ]);
 
     // Grouping by Hdd::Id to find deduplicates
     lf_deduplicating = lf_deduplicating
@@ -180,12 +171,7 @@ fn detect_duplicates(lf: LazyFrame) -> PolarsResult<(LazyFrame, Vec<String>)> {
                 .and(
                     col(Hdd::Ids.as_str())
                         .list()
-                        .set_difference(col(format!(
-                            "{}_{}",
-                            Hdd::Ids.as_str(),
-                            "right"
-                        )
-                        .as_str()))
+                        .set_difference(col(format!("{}_{}", Hdd::Ids.as_str(), "right").as_str()))
                         .list()
                         .len()
                         .eq(0),
@@ -250,8 +236,7 @@ fn reconciliate_lf(
     vec_ids_to_remove: Vec<String>,
     exprs_columns_to_select: &[Expr],
 ) -> PolarsResult<LazyFrame> {
-    let series_ids_to_remove =
-        Series::new("ids_to_remove".into(), vec_ids_to_remove);
+    let series_ids_to_remove = Series::new("ids_to_remove".into(), vec_ids_to_remove);
 
     let lf_row_to_remove = lf_original
         .clone()
@@ -320,8 +305,7 @@ fn hash_partition(
             name.clone(),
             filtered_lf.clone().select(exprs_columns_to_select),
         );
-        frames_map_df
-            .insert(name, filtered_lf.select(exprs_columns_to_select).collect()?);
+        frames_map_df.insert(name, filtered_lf.select(exprs_columns_to_select).collect()?);
     }
     info!("Dataframe partitions by name: {:#?}", frames_map_df);
     Ok(frames_map)
@@ -359,7 +343,10 @@ fn get_rows_to_add_and_remove(
         .into_iter()
         .flat_map(|(_, (_, vec_ids_to_remove))| vec_ids_to_remove)
         .collect();
-    info!("LazyFrame_all_rows_to_add: {:#?}\nids_to_remove: {:#?}", df_debug, vec_all_ids_to_remove);
+    info!(
+        "LazyFrame_all_rows_to_add: {:#?}\nids_to_remove: {:#?}",
+        df_debug, vec_all_ids_to_remove
+    );
     Ok((lf_all_rows_to_add, vec_all_ids_to_remove))
 }
 
@@ -414,8 +401,7 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
         &exprs_columns_to_select,
     )?;
     let hashmap_duplicates = get_hashmap_duplicates(hashmap_partitions)?;
-    let (lf_rows_to_add, vec_ids_to_remove) =
-        get_rows_to_add_and_remove(hashmap_duplicates)?;
+    let (lf_rows_to_add, vec_ids_to_remove) = get_rows_to_add_and_remove(hashmap_duplicates)?;
 
     let exprs_columns_to_select_with_ids = [
         col(Hdd::Id.as_str()),
@@ -440,9 +426,8 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
     let mut df_final = lf_deduplicated.collect()?;
     info!("Deduplication: {:#?}", df_final);
 
-    let mut csv_file = std::fs::File::create(
-        String::from(FILES_PATH) + "HDD_deduplication_transformed_test.csv",
-    )?;
+    let mut csv_file =
+        std::fs::File::create(String::from(FILES_PATH) + "HDD_deduplication_transformed_test.csv")?;
     CsvWriter::new(&mut csv_file).finish(&mut df_final)?;
 
     Ok(())

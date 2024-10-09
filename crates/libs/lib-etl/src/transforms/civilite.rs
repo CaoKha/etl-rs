@@ -1,6 +1,6 @@
+use crate::config::{CIVILITE_MAP, SPECIAL_CIVILITIES};
 use polars::{error::PolarsResult, series::Series};
 use regex::Regex;
-use crate::config::{CIVILITE_MAP, SPECIAL_CIVILITIES};
 
 use super::utils::{strip_accent, transform_string_series};
 

@@ -1,5 +1,5 @@
-use sea_query::Iden;
 use super::AsString;
+use sea_query::Iden;
 
 #[derive(Iden)]
 pub enum Jdd {

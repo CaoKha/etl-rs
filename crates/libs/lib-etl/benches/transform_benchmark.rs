@@ -1,3 +1,4 @@
+use criterion::{criterion_group, criterion_main, Criterion};
 use lib_etl::config::Transform;
 use lib_etl::schemas::jdd::Jdd;
 use lib_etl::schemas::AsString;
@@ -5,7 +6,6 @@ use lib_etl::transforms::{
     col_with_udf_expr, email::col_email_with_polars_expr,
     raison_sociale::col_raison_sociale_with_polars_expr,
 };
-use criterion::{criterion_group, criterion_main, Criterion};
 use polars::prelude::*;
 
 fn benchmark_polars_expr_vs_udf(c: &mut Criterion) {

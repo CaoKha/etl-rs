@@ -1,15 +1,14 @@
-// region: -- Modules 
+// region: -- Modules
 mod crud_fns;
-mod utils;
 mod macro_utils;
+mod utils;
 use modql::SIden;
 use sea_query::{Iden, IntoIden, TableRef};
 
 // Flatten hierachy for user code
-pub use crud_fns::*; 
+pub use crud_fns::*;
 pub use utils::*;
 // endregion: -- Modules
-
 
 // region: --- constants
 const LIST_LIMIT_DEFAULT: i64 = 1000;

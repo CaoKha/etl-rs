@@ -49,18 +49,17 @@ impl Error {
     where
         F: FnOnce(&str, &str) -> Option<Self>,
     {
-        match self.as_database_error().map(|db_error| {
-            (db_error.code(), db_error.table(), db_error.constraint())
-        }) {
+        match self
+            .as_database_error()
+            .map(|db_error| (db_error.code(), db_error.table(), db_error.constraint()))
+        {
             // "23505" => postgresql "unique violation"
-            Some((Some(Cow::Borrowed("23505")), Some(table), Some(constraint))) => {
-                resolver
-                    .and_then(|fun| fun(table, constraint))
-                    .unwrap_or_else(|| Error::UniqueViolation {
-                        table: table.to_string(),
-                        constraint: constraint.to_string(),
-                    })
-            }
+            Some((Some(Cow::Borrowed("23505")), Some(table), Some(constraint))) => resolver
+                .and_then(|fun| fun(table, constraint))
+                .unwrap_or_else(|| Error::UniqueViolation {
+                    table: table.to_string(),
+                    constraint: constraint.to_string(),
+                }),
             _ => self,
         }
     }
@@ -69,9 +68,7 @@ impl Error {
     /// if this Error is an SQLX Error that contains a database error.
     pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
         match self {
-            Error::Dbx(dbx::Error::Sqlx(sqlx_error)) => {
-                sqlx_error.as_database_error()
-            }
+            Error::Dbx(dbx::Error::Sqlx(sqlx_error)) => sqlx_error.as_database_error(),
             _ => None,
         }
     }

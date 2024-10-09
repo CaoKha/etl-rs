@@ -29,7 +29,6 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
         .from_path(FILES_PATH.to_string() + &config.csv.hdd.file_path)
         .expect("Failed to read CSV file");
 
-
     info!("CSV file loaded successfully");
 
     let postgres_url = std::env::var("DATABASE_URL")?;

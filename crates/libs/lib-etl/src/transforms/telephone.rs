@@ -4,7 +4,6 @@ use polars::{error::PolarsResult, series::Series};
 
 use super::utils::transform_string_series;
 
-
 pub fn transform_telephone(opt_phone_number: Option<&str>) -> Option<String> {
     #[inline]
     fn remove_non_digits(input: &str) -> String {

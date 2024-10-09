@@ -1,5 +1,5 @@
-use lib_etl::kafka::create_kafka_stream_consumer;
 use clap::{Arg, Command};
+use lib_etl::kafka::create_kafka_stream_consumer;
 use log::{info, warn};
 
 use rdkafka::{

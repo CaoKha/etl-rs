@@ -1,5 +1,6 @@
 use crate::config::{CsvConfig, KafkaConfig};
 use chrono::Utc;
+use core::error::Error;
 use log::{error, info};
 use rdkafka::{
     config::{ClientConfig, RDKafkaLogLevel},
@@ -11,7 +12,6 @@ use rdkafka::{
     ClientContext, TopicPartitionList,
 };
 use serde_json::Value;
-use core::error::Error;
 
 // --Start-Producer--
 fn create_kafka_producer(kafka_config: &KafkaConfig) -> FutureProducer {
