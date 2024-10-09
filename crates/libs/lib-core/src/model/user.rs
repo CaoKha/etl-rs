@@ -240,7 +240,7 @@ mod tests {
         // -- Execute
         let user_id = UserBmc::create(
             &ctx,
-            &mm,
+            mm,
             UserForCreate {
                 username: fx_username.to_string(),
                 pwd_clear: fx_pwd_clear.to_string(),
@@ -249,22 +249,22 @@ mod tests {
         .await?;
 
         // -- Check
-        let user: UserForLogin = UserBmc::get(&ctx, &mm, user_id).await?;
+        let user: UserForLogin = UserBmc::get(&ctx, mm, user_id).await?;
         assert_eq!(user.username, fx_username);
-        UserBmc::delete(&ctx, &mm, user_id).await?;
+        UserBmc::delete(&ctx, mm, user_id).await?;
         Ok(())
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_first_ok_demo1() -> Result<()> {
+    async fn test_first_ok() -> Result<()> {
         // -- Setup & Fixtures
         let mm = _dev_utils::init_test().await;
         let ctx = Ctx::root_ctx();
         let fx_username = "demo1";
 
         // -- Execute
-        let user: User = UserBmc::first_by_username(&ctx, &mm, fx_username)
+        let user: User = UserBmc::first_by_username(&ctx, mm, fx_username)
             .await?
             .ok_or("Should have user 'demo1'")?;
 

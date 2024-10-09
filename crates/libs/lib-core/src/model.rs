@@ -23,6 +23,7 @@ mod error;
 mod store;
 
 pub mod agent;
+pub mod conv_msg;
 pub mod modql_utils;
 pub mod user;
 

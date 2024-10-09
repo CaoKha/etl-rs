@@ -27,18 +27,15 @@ pub async fn init_dev() {
 }
 
 /// Initialize test environment.
-pub async fn init_test() -> ModelManager {
+pub async fn init_test() -> &'static ModelManager {
     static INIT: OnceCell<ModelManager> = OnceCell::const_new();
 
-    let mm = INIT
-        .get_or_init(|| async {
-            init_dev().await;
-            // NOTE: Rare occasion where unwrap is kind of ok.
-            ModelManager::new().await.unwrap()
-        })
-        .await;
-
-    mm.clone()
+    INIT.get_or_init(|| async {
+        init_dev().await;
+        // NOTE: Rare occasion where unwrap is kind of ok.
+        ModelManager::new().await.unwrap()
+    })
+    .await
 }
 
 // region:    --- User seed/clean
