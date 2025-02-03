@@ -4,8 +4,8 @@ use polars::{
     datatypes::StringChunked,
     error::PolarsResult,
     frame::DataFrame,
-    prelude::NamedFrom,
-    series::{IntoSeries, Series},
+    prelude::{Column, IntoColumn, NamedFrom},
+    series::Series,
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -67,13 +67,13 @@ pub fn strip_accent(text: &str) -> String {
         .collect()
 }
 
-pub fn transform_string_series<F>(series: &Series, transform_fn: F) -> PolarsResult<Option<Series>>
+pub fn transform_string_series<F>(series: &Column, transform_fn: F) -> PolarsResult<Option<Column>>
 where
     F: Fn(Option<&str>) -> Option<String> + Send + Sync + 'static,
 {
     let ca = series.str()?;
     let transformed = ca.into_iter().map(transform_fn).collect::<StringChunked>();
-    Ok(Some(transformed.into_series()))
+    Ok(Some(transformed.into_column()))
 }
 
 pub fn struct_to_dataframe<T>(input: &[T]) -> DataFrame

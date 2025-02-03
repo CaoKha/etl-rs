@@ -1,5 +1,5 @@
 use crate::config::{CIVILITE_MAP, SPECIAL_CIVILITIES};
-use polars::{error::PolarsResult, series::Series};
+use polars::{error::PolarsResult, prelude::Column};
 use regex::Regex;
 
 use super::utils::{strip_accent, transform_string_series};
@@ -45,8 +45,8 @@ fn transform_civilite(opt_text: Option<&str>) -> Option<String> {
     })
 }
 
-pub fn transform_col_civilite(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_civilite)
+pub fn transform_col_civilite(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_civilite)
 }
 
 #[cfg(test)]

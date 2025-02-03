@@ -3,8 +3,8 @@ use crate::schemas::jdd::Jdd;
 use crate::schemas::{AsString, SchemasEnum};
 use polars::datatypes::StringChunked;
 use polars::lazy::dsl::{col, lit, Expr, GetOutput};
-use polars::series::IntoSeries;
-use polars::{error::PolarsResult, series::Series};
+use polars::prelude::{Column, IntoColumn};
+use polars::error::PolarsResult;
 use regex::Regex;
 use std::borrow::Cow;
 
@@ -76,8 +76,8 @@ fn transform_nom(opt_text: Option<&str>) -> Option<String> {
     })
 }
 
-pub fn transform_col_nom(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_nom)
+pub fn transform_col_nom(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_nom)
 }
 
 fn transform_col_nom_expr(col_nom: &str) -> Expr {
@@ -96,7 +96,7 @@ fn transform_col_nom_expr(col_nom: &str) -> Expr {
                         })?
                     })
                     .collect::<StringChunked>();
-                Ok(Some(s.into_series()))
+                Ok(Some(s.into_column()))
             },
             GetOutput::same_type(),
         ) // Remove accents and convert to uppercase
@@ -198,10 +198,10 @@ mod tests {
         // Extract the Series for comparison
         let result_series = result_df
             .column(Jdd::Nom.as_str())
-            .expect("Result column not found");
+            .expect("Result column not found").as_materialized_series();
         let expected_series = expected_df
             .column(Jdd::Nom.as_str())
-            .expect("Expected column not found");
+            .expect("Expected column not found").as_materialized_series();
 
         // Ensure the lengths of both Series are the same
         assert_eq!(

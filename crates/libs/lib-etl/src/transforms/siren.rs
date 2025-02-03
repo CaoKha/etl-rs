@@ -2,7 +2,7 @@ use crate::schemas::{jdd::Jdd, AsString};
 use polars::{
     datatypes::StringChunked,
     lazy::dsl::{col, lit, Expr, GetOutput},
-    series::IntoSeries,
+    prelude::IntoColumn,
 };
 
 pub fn col_siren_with_polars_expr() -> Expr {
@@ -25,7 +25,7 @@ pub fn col_siren_with_polars_expr() -> Expr {
                         })
                     })
                     .collect::<StringChunked>();
-                Ok(Some(result.into_series()))
+                Ok(Some(result.into_column()))
             },
             GetOutput::same_type(),
         )
@@ -71,10 +71,12 @@ mod test {
         // Extract the Series for comparison
         let result_series = result_df
             .column(Jdd::Siren.as_str())
-            .expect("Result column not found");
+            .expect("Result column not found")
+            .as_materialized_series();
         let expected_series = expected_df
             .column(Jdd::Siren.as_str())
-            .expect("Expected column not found");
+            .expect("Expected column not found")
+            .as_materialized_series();
 
         // Ensure the lengths of both Series are the same
         assert_eq!(

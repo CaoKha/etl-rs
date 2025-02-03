@@ -2,7 +2,7 @@ use polars::{
     datatypes::StringChunked,
     error::PolarsResult,
     lazy::dsl::{col, lit, Expr, GetOutput},
-    series::{IntoSeries, Series},
+    prelude::{Column, IntoColumn},
 };
 use regex::Regex;
 
@@ -58,8 +58,8 @@ fn transform_email(opt_email: Option<&str>) -> Option<String> {
     })
 }
 
-pub fn transform_col_email(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_email)
+pub fn transform_col_email(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_email)
 }
 
 fn transform_col_email_expr(col_email: &str) -> Expr {
@@ -117,7 +117,7 @@ fn transform_col_email_expr(col_email: &str) -> Expr {
                         })
                     })
                     .collect::<StringChunked>();
-                Ok(Some(s.into_series()))
+                Ok(Some(s.into_column()))
             },
             GetOutput::same_type(),
         )
@@ -247,10 +247,12 @@ mod tests {
         // Extract the Series for comparison
         let result_series = result_df
             .column(Jdd::Email.as_str())
-            .expect("Result column not found");
+            .expect("Result column not found")
+            .as_materialized_series();
         let expected_series = expected_df
             .column(Jdd::Email.as_str())
-            .expect("Expected column not found");
+            .expect("Expected column not found")
+            .as_materialized_series();
 
         // Ensure the lengths of both Series are the same
         assert_eq!(

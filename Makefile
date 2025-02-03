@@ -36,3 +36,6 @@ example-csv-jdd-to-kafka:
 
 example-kafka-jdd-to-mongo:
 	cargo run --package lib-etl --example kafka_jdd_to_mongo
+
+test-lib-core:
+	cargo test -p lib-core

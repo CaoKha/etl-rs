@@ -1,7 +1,6 @@
 /// Convenience macro rules to generate default CRUD functions for a Bmc/Entity.
 /// Note: If custom functionality is required, use the code below as foundational
 ///       code for the custom implementations.
-
 #[macro_export]
 macro_rules! generate_common_bmc_fns {
     (Bmc: $struct_name:ident,

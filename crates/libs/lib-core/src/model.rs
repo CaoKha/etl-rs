@@ -23,13 +23,16 @@ mod error;
 mod store;
 
 pub mod agent;
+pub mod conv;
 pub mod conv_msg;
+pub mod conv_user;
 pub mod modql_utils;
 pub mod user;
 
 pub use self::error::{Error, Result};
 
 #[derive(Clone)]
+#[cfg_attr(feature = "with-rpc", derive(rpc_router::RpcResource))]
 pub struct ModelManager {
     dbx: Dbx,
 }

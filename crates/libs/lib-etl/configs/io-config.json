@@ -6,12 +6,12 @@
   "csv": {
     "jdd": {
       "table_name": "jdd",
-      "file_path": "JDD_normalisation.csv",
+      "file_path": "crates/libs/lib-etl/files/JDD_normalisation.csv",
       "number_of_rows": 57
     },
     "hdd": {
       "table_name": "hdd",
-      "file_path": "HDD_deduplication.csv",
+      "file_path": "crates/libs/lib-etl/files/HDD_deduplication.csv",
       "number_of_rows": 25
     }
   },

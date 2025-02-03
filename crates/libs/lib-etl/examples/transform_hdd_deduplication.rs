@@ -279,7 +279,6 @@ fn filter_duplicates(lf: LazyFrame) -> PolarsResult<LazyFrame> {
     Ok(lf_deduplicating)
 }
 
-// WIP
 fn hash_partition(
     lf: LazyFrame,
     based_on_col: &str,
@@ -355,7 +354,7 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
     env_logger::init();
     dotenv::dotenv().ok();
     // Initialize PostgreSQL connection pool
-    let postgres_url = env::var("DATABASE_URL").expect("POSTGRES_URI must be set");
+    let postgres_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     info!("Database URL: {}", postgres_url);
     let pool = PgPool::connect(&postgres_url)
         .await

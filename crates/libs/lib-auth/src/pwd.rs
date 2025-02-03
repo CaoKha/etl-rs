@@ -17,12 +17,13 @@
 use std::str::FromStr;
 
 use lazy_regex::regex_captures;
-use scheme::{get_scheme, Scheme, SchemeStatus, DEFAULT_SCHEME};
+use scheme::{get_scheme, Scheme, DEFAULT_SCHEME};
 use uuid::Uuid;
 
 mod error;
 mod scheme;
 pub use self::error::{Error, Result};
+pub use scheme::SchemeStatus;
 
 #[cfg_attr(test, derive(Clone))]
 pub struct ContentToHash {

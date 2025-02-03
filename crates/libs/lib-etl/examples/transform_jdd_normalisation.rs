@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
     dotenv::dotenv().ok();
 
     // Initialize PostgreSQL connection pool
-    let postgres_url = env::var("POSTGRES_URL").expect("POSTGRES_URI must be set");
+    let postgres_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     info!("Database URL: {}", postgres_url);
     let pool = PgPool::connect(&postgres_url)
         .await
@@ -52,10 +52,12 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
     ]);
 
     let mut df = lf.collect()?;
+    let file_name = String::from(FILES_PATH) + "JDD_normalisation_transformed.csv";
 
     let mut csv_file =
-        std::fs::File::create(String::from(FILES_PATH) + "JDD_normalisation_transformed.csv")?;
+        std::fs::File::create(&file_name)?;
     CsvWriter::new(&mut csv_file).finish(&mut df)?;
+    info!("A new JDD_normalisation_transformed.csv file has been created at {}", file_name);
 
     Ok(())
 }

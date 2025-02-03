@@ -2,7 +2,7 @@ use polars::{
     datatypes::StringChunked,
     error::PolarsResult,
     lazy::dsl::{col, Expr, GetOutput},
-    series::{IntoSeries, Series},
+    prelude::{Column, IntoColumn},
 };
 
 use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
@@ -36,8 +36,8 @@ fn transform_raison_sociale(opt_text: Option<&str>) -> Option<String> {
     })?
 }
 
-pub fn transform_col_raison_sociale(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_raison_sociale)
+pub fn transform_col_raison_sociale(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_raison_sociale)
 }
 
 fn transform_col_raison_sociale_expr(col_rs: &str) -> Expr {
@@ -67,7 +67,7 @@ fn transform_col_raison_sociale_expr(col_rs: &str) -> Expr {
                     })
                 })
                 .collect::<StringChunked>();
-            Ok(Some(result.into_series()))
+            Ok(Some(result.into_column()))
         },
         GetOutput::same_type(),
     );
@@ -189,10 +189,12 @@ mod tests {
         // Extract the Series for comparison
         let result_series = result_df
             .column(Jdd::RaisonSociale.as_str())
-            .expect("Result column not found");
+            .expect("Result column not found")
+            .as_materialized_series();
         let expected_series = expected_df
             .column(Jdd::RaisonSociale.as_str())
-            .expect("Expected column not found");
+            .expect("Expected column not found")
+            .as_materialized_series();
 
         // Ensure the lengths of both Series are the same
         assert_eq!(

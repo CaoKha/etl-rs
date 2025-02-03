@@ -2,7 +2,7 @@ use crate::schemas::{hdd::Hdd, jdd::Jdd, AsString, SchemasEnum};
 use polars::{
     datatypes::StringChunked,
     error::PolarsResult,
-    series::{IntoSeries, Series},
+    prelude::{Column, IntoColumn},
 };
 use regex::Regex;
 
@@ -81,8 +81,8 @@ fn transform_prenom(opt_text: Option<&str>) -> Option<String> {
     })
 }
 
-pub fn transform_col_prenom(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_prenom)
+pub fn transform_col_prenom(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_prenom)
 }
 
 fn transform_col_prenom_expr(col_prenom: &str) -> Expr {
@@ -136,7 +136,7 @@ fn transform_col_prenom_expr(col_prenom: &str) -> Expr {
                         // let text = strip_accent(text).to_uppercase();
                     })
                     .collect::<StringChunked>();
-                Ok(Some(s.into_series()))
+                Ok(Some(s.into_column()))
             },
             GetOutput::same_type(),
         ) // Apply transformations
@@ -221,10 +221,12 @@ mod tests {
         // Extract the Series for comparison
         let result_series = result_df
             .column(Jdd::Prenom.as_str())
-            .expect("Result column not found");
+            .expect("Result column not found")
+            .as_materialized_series();
         let expected_series = expected_df
             .column(Jdd::Prenom.as_str())
-            .expect("Expected column not found");
+            .expect("Expected column not found")
+            .as_materialized_series();
 
         // Ensure the lengths of both Series are the same
         assert_eq!(

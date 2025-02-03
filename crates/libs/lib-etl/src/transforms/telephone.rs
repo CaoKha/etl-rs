@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use polars::{error::PolarsResult, series::Series};
+use polars::{error::PolarsResult, prelude::Column};
 
 use super::utils::transform_string_series;
 
@@ -83,8 +83,8 @@ pub fn transform_telephone(opt_phone_number: Option<&str>) -> Option<String> {
     })
 }
 
-pub fn transform_col_telephone(series: &Series) -> PolarsResult<Option<Series>> {
-    transform_string_series(series, transform_telephone)
+pub fn transform_col_telephone(col: &Column) -> PolarsResult<Option<Column>> {
+    transform_string_series(col, transform_telephone)
 }
 
 #[cfg(test)]

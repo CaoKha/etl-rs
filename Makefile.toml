@@ -2,6 +2,8 @@
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 CARGO_MAKE_USE_WORKSPACE_PROFILE = false
 
+env_files = [ "./.env"]
+
 [tasks.docker-build]
 command = "docker"
 args = ["compose", "build"]
